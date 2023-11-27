@@ -1,6 +1,6 @@
 {
   "name": "@meepen/luaparse",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A lua parser",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -27,9 +27,6 @@
     "bin": "npm run build && node --enable-source-maps dist/bin.js",
     "test": "npx c8 node --loader tsx run-tests.ts"
   },
-  "dependencies": {
-    "typescript": "^5.2.2"
-  },
   "devDependencies": {
     "@types/node": "^20.8.3",
     "@typescript-eslint/eslint-plugin": "^6.7.4",
@@ -40,7 +37,8 @@
     "glob": "^10.3.10",
     "prettier": "^3.0.3",
     "rimraf": "^5.0.5",
-    "tsx": "^3.13.0"
+    "tsx": "^3.13.0",
+    "typescript": "^5.2.2"
   },
   "author": {
     "email": "meep@meepen.dev",

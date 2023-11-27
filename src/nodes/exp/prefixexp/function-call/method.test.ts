@@ -15,4 +15,10 @@ describe('MethodFunctionCall', () => {
   it('should return the prefix', () => {
     assert.deepEqual(call.object, prefix);
   });
+  it('should return the method', () => {
+    assert.deepEqual(call.name, method);
+  });
+  it('should return the args', () => {
+    assert.deepEqual(call.argument, args);
+  });
 });
