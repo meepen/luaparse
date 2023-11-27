@@ -1,0 +1,55 @@
+{
+  "name": "@meepen/luaparse",
+  "version": "1.0.0",
+  "description": "A lua parser",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "lua",
+    "parser",
+    "ast",
+    "tokenizer"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:meepen/luaparse.git"
+  },
+  "bugs": {
+    "url": "https://github.com/meepen/luaparse/issues"
+  },
+  "homepage": "https://meepen.dev/luaparse/",
+  "type": "module",
+  "scripts": {
+    "build": "rimraf dist && tsc",
+    "bin": "npm run build && node --enable-source-maps dist/bin.js",
+    "test": "npx c8 node --loader tsx run-tests.ts"
+  },
+  "dependencies": {
+    "typescript": "^5.2.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.3",
+    "@typescript-eslint/eslint-plugin": "^6.7.4",
+    "c8": "^8.0.1",
+    "eslint": "^8.51.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "glob": "^10.3.10",
+    "prettier": "^3.0.3",
+    "rimraf": "^5.0.5",
+    "tsx": "^3.13.0"
+  },
+  "author": {
+    "email": "meep@meepen.dev",
+    "name": "Devin Korb",
+    "url": "https://meepen.dev"
+  },
+  "license": "MIT",
+  "imports": {
+    "#src/*": "./dist/*",
+    "#src": "./dist/index.js"
+  }
+}
