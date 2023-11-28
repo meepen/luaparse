@@ -1,6 +1,6 @@
 import { INode, NodeType } from '../node.js';
 
-export const enum FieldType {
+export enum FieldType {
   ExpressionExpression = 'ExpressionExpression',
   NameExpression = 'NameExpression',
   Expression = 'Expression',

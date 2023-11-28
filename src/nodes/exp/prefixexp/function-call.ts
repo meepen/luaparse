@@ -1,6 +1,6 @@
 import { IPrefixExpression, PrefixExpressionType } from '../prefix-expression.js';
 
-export const enum FunctionCallPrefixExpressionType {
+export enum FunctionCallPrefixExpressionType {
   Normal = 'Normal',
   Method = 'Method',
 }

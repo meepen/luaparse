@@ -12,7 +12,7 @@ abstract class TokenizerState {
   columnNumber!: number;
 }
 
-export const enum TokenType {
+export enum TokenType {
   Identifier = 'Identifier',
   Number = 'Number',
   String = 'String',

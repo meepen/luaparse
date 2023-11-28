@@ -1,4 +1,4 @@
-export const enum CharCodes {
+export enum CharCodes {
   NULL = 0,
   BELL = 7,
   BACKSPACE = 8,
