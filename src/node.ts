@@ -9,7 +9,6 @@ export enum NodeType {
   ExpressionList = 'ExpressionList',
   Expression = 'Expression',
   Arguments = 'Arguments',
-  Function = 'Function',
   ParameterList = 'ParameterList',
   Field = 'Field',
   FuncBody = 'FuncBody',
