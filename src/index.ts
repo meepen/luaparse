@@ -4,4 +4,6 @@
 
 export * from './nodes/types.js';
 export * from './nodes/index.js';
+export * from './parser/index.js';
+export * from './tokenizer/index.js';
 export * from './node.js';

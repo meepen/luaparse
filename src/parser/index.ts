@@ -2,7 +2,6 @@ import { Chunk } from '../nodes/chunk.js';
 import { PUCRio_v5_1_Parser } from './versions/puc-rio-5-1.js';
 
 export enum LuaVersion {
-  LuaJIT = 'LuaJIT',
   PUCRio_v5_1 = '5.1',
 }
 
