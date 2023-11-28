@@ -4,3 +4,4 @@
 
 export * from './nodes/types.js';
 export * from './nodes/index.js';
+export * from './node.js';
