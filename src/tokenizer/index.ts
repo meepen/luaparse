@@ -6,10 +6,10 @@ type StringBytes = {
   readonly bytes: Uint8Array;
 };
 
-abstract class TokenizerState {
-  pos!: number;
-  lineNumber!: number;
-  columnNumber!: number;
+export interface TokenizerState {
+  get pos(): number;
+  get lineNumber(): number;
+  get columnNumber(): number;
 }
 
 export enum TokenType {
@@ -67,13 +67,12 @@ export function isValidDecimalChar(char: number) {
   return char >= CharCodes.DIGIT_0 && char <= CharCodes.DIGIT_9;
 }
 
-export class Tokenizer extends TokenizerState {
+export class Tokenizer implements TokenizerState {
   constructor(
     value: string,
     public tabSize = 2,
     public skipComments = true,
   ) {
-    super();
     this.input = {
       value,
       bytes: this.textEncoder.encode(value),

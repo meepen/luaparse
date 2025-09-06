@@ -23,7 +23,7 @@
   "homepage": "https://meepen.dev/luaparse/",
   "type": "module",
   "scripts": {
-  "prebuild": "rimraf dist src/**/*.js src/**/*.js.map src/**/*.d.ts",
+    "prebuild": "rimraf -g dist src/**/*.js src/**/*.js.map src/**/*.d.ts",
     "build": "tsc --build tsconfig.app.json",
     "bin": "npm run build && node --enable-source-maps dist/bin.js",
     "pretest": "eslint .",

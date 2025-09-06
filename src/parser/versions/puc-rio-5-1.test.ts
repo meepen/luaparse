@@ -39,6 +39,24 @@ function shouldContain<Type>(_actual: unknown, _expected: Type, _dataName = 'dat
 }
 
 describe('PUCRio_v5_1_Parser', () => {
+  describe('AstParser', () => {
+    it('should have correct luaVersion', () => {
+      const parser = new PUCRio_v5_1_Parser('a + b');
+      assert.equal(parser.luaVersion, '5.1');
+    });
+
+    it('should have correct source', () => {
+      const source = 'a + b';
+      const parser = new PUCRio_v5_1_Parser(source);
+      assert.equal(parser.source, source);
+    });
+
+    it('should should have a parse method', () => {
+      const parser = new PUCRio_v5_1_Parser('a + b');
+      assert.equal(typeof parser.parse, 'function');
+    });
+  });
+
   it('should parse a simple chunk', async () => {
     const parser = new PUCRio_v5_1_Parser('return');
     const chunk = await parser.parse();
@@ -416,6 +434,16 @@ describe('PUCRio_v5_1_Parser', () => {
           ],
         });
       });
+
+      it('should throw if missing expression in if', async () => {
+        const parser = new PUCRio_v5_1_Parser('if then end');
+        await assert.rejects(parser.parse(), 'Expected expression');
+      });
+
+      it('should throw if missing expression in elseif', async () => {
+        const parser = new PUCRio_v5_1_Parser('if true then elseif then end');
+        await assert.rejects(parser.parse(), 'Expected expression');
+      });
     });
 
     describe('repeat ... until expression', () => {
@@ -614,6 +642,11 @@ describe('PUCRio_v5_1_Parser', () => {
           ],
         });
       });
+
+      it('should fail with a namelist instead of a name', async () => {
+        const parser = new PUCRio_v5_1_Parser('for i, j = 1, 10 do end');
+        await assert.rejects(parser.parse(), 'Expected name');
+      });
     });
 
     describe('for namelist in explist do ... end', () => {
@@ -705,6 +738,11 @@ describe('PUCRio_v5_1_Parser', () => {
             },
           ],
         });
+      });
+
+      it('should fail with no explist', async () => {
+        const parser = new PUCRio_v5_1_Parser('for i in do end');
+        await assert.rejects(parser.parse(), 'Expected expression');
       });
     });
 
@@ -824,6 +862,18 @@ describe('PUCRio_v5_1_Parser', () => {
               },
             ],
           });
+        });
+        it('should fail with bad namelist', async () => {
+          const parser = new PUCRio_v5_1_Parser('local 1');
+          await assert.rejects(parser.parse(), 'Expected name');
+        });
+        it('should fail with no namelist', async () => {
+          const parser = new PUCRio_v5_1_Parser('local ');
+          await assert.rejects(parser.parse(), 'Expected name');
+        });
+        it('should fail with bad explist', async () => {
+          const parser = new PUCRio_v5_1_Parser('local a = ');
+          await assert.rejects(parser.parse(), 'Expected expression');
         });
       });
 
@@ -963,6 +1013,20 @@ describe('PUCRio_v5_1_Parser', () => {
               },
             ],
           });
+        });
+
+        it('should fail with no name', async () => {
+          const parser = new PUCRio_v5_1_Parser('local function ');
+          await assert.rejects(parser.parse(), 'Expected name');
+        });
+        it('should fail without parentheses', async () => {
+          const parser = new PUCRio_v5_1_Parser('local function test end');
+          await assert.rejects(parser.parse(), "Expected '('");
+        });
+
+        it('should fail with bad parameter list', async () => {
+          const parser = new PUCRio_v5_1_Parser('local function test(1) end');
+          await assert.rejects(parser.parse(), 'Expected name');
         });
       });
     });
@@ -1202,6 +1266,12 @@ describe('PUCRio_v5_1_Parser', () => {
             },
           ],
         });
+      });
+
+      it('should fail with bad explist', async () => {
+        const parser = new PUCRio_v5_1_Parser('a = ');
+
+        await assert.rejects(parser.parse(), 'Expected expression');
       });
     });
   });
@@ -1588,6 +1658,57 @@ describe('PUCRio_v5_1_Parser', () => {
                         {
                           type: NodeType.NameList,
                           children: [],
+                        },
+                      ],
+                    },
+                    {
+                      type: NodeType.Chunk,
+                      children: [],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        });
+      });
+      it('should parse names and varargs', async () => {
+        const parser = new PUCRio_v5_1_Parser('function test(a, b, ...) end');
+        const chunk = await parser.parse();
+        shouldContain(chunk, {
+          body: [
+            {
+              type: NodeType.Statement,
+              statementType: StatementType.FunctionDeclaration,
+              children: [
+                {
+                  type: NodeType.FunctionName,
+                  name: {
+                    type: NodeType.Name,
+                    name: 'test',
+                  },
+                  indexers: [],
+                  methodName: undefined,
+                },
+                {
+                  type: NodeType.FuncBody,
+                  children: [
+                    {
+                      type: NodeType.ParameterList,
+                      vararg: true,
+                      children: [
+                        {
+                          type: NodeType.NameList,
+                          children: [
+                            {
+                              type: NodeType.Name,
+                              name: 'a',
+                            },
+                            {
+                              type: NodeType.Name,
+                              name: 'b',
+                            },
+                          ],
                         },
                       ],
                     },

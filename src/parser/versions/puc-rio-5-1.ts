@@ -256,6 +256,9 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
       }
       this.expect('=');
       const assignments = await this.parseExpressionList();
+      if (assignments.expressions.length === 0) {
+        throw this.parserError('expected expression');
+      }
       return new AssignmentStatement(new VariableList(vars), assignments);
     } else if (prefixExpression.prefixExpressionType === PrefixExpressionType.FunctionCall) {
       return new FunctionCallStatement(prefixExpression);
@@ -263,7 +266,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     throw this.parserError('expected statement');
   }
 
-  async parseLocalStatement(): Promise<LocalVariablesStatement> {
+  protected async parseLocalStatement(): Promise<LocalVariablesStatement> {
     // this will already be consumed by the caller
     // this.expect('local');
     const nameList = this.parseNameList();
@@ -273,10 +276,14 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     let expressions: ExpressionList | undefined;
     if (this.consume('=')) {
       expressions = await this.parseExpressionList();
+      if (expressions.expressions.length === 0) {
+        throw this.parserError('expected expression');
+      }
     }
     return new LocalVariablesStatement(nameList, expressions);
   }
-  async parseLocalFunctionStatement(): Promise<LocalFunctionStatement> {
+
+  protected async parseLocalFunctionStatement(): Promise<LocalFunctionStatement> {
     // this will already be consumed by the caller
     // this.expect('local');
     this.expect('function');
@@ -285,7 +292,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return new LocalFunctionStatement(name, body);
   }
 
-  async parseRepeatStatement(): Promise<RepeatStatement> {
+  protected async parseRepeatStatement(): Promise<RepeatStatement> {
     this.expect('repeat');
     const statements = await this.parseBlock();
     this.expect('until');
@@ -296,7 +303,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return new RepeatStatement(statements, condition);
   }
 
-  async parseIfStatement(): Promise<IfStatement> {
+  protected async parseIfStatement(): Promise<IfStatement> {
     this.expect('if');
     const exp = await this.parseExpression();
     if (!exp) {
@@ -325,7 +332,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return new IfStatement(exp, block, clauses, elseBlock);
   }
 
-  async parseForAmibiguousStatement(): Promise<ForStatement | ForInStatement> {
+  protected async parseForAmibiguousStatement(): Promise<ForStatement | ForInStatement> {
     this.expect('for');
     const nameList = this.parseNameList();
     if (!nameList) {
@@ -359,6 +366,9 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
       // for in statement
       this.expect('in');
       const expressions = await this.parseExpressionList();
+      if (expressions.expressions.length === 0) {
+        throw this.parserError('expected expression');
+      }
       this.expect('do');
       const statements = await this.parseBlock();
       this.expect('end');
@@ -367,7 +377,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     }
   }
 
-  async parseLocalAmbiguousStatement(): Promise<LocalVariablesStatement | LocalFunctionStatement> {
+  protected async parseLocalAmbiguousStatement(): Promise<LocalVariablesStatement | LocalFunctionStatement> {
     this.expect('local');
     const token = this.lookahead;
     if (!token) {
@@ -380,7 +390,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     }
   }
 
-  parseFuncName(): FuncName {
+  protected parseFuncName(): FuncName {
     const name = this.parseName();
     const indexers: Name[] = [];
     while (this.consume('.')) {
@@ -393,27 +403,27 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return new FuncName(name, indexers, methodName);
   }
 
-  async parseFunctionStatement(): Promise<FunctionStatement> {
+  protected async parseFunctionStatement(): Promise<FunctionStatement> {
     this.expect('function');
     const name = this.parseFuncName();
     const body = await this.parseFuncBody();
     return new FunctionStatement(name, body);
   }
 
-  async parseReturnStatement(): Promise<ReturnStatement> {
+  protected async parseReturnStatement(): Promise<ReturnStatement> {
     this.expect('return');
     const expressions = await this.parseExpressionList();
     return new ReturnStatement(expressions);
   }
 
-  async parseDoStatement(): Promise<DoStatement> {
+  protected async parseDoStatement(): Promise<DoStatement> {
     this.expect('do');
     const statements = await this.parseBlock();
     this.expect('end');
     return new DoStatement(statements);
   }
 
-  async parseWhileStatement(): Promise<WhileStatement> {
+  protected async parseWhileStatement(): Promise<WhileStatement> {
     this.expect('while');
     const condition = await this.parseExpression();
     if (!condition) {
@@ -425,7 +435,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return new WhileStatement(condition, statements);
   }
 
-  async parseExpressionList(): Promise<ExpressionList> {
+  protected async parseExpressionList(): Promise<ExpressionList> {
     const expressions: Expression[] = [];
     const expression = await this.parseExpression();
     if (expression) {
@@ -441,7 +451,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return new ExpressionList(expressions);
   }
 
-  async parseExpression(withBinaryExpressions = true): Promise<Expression | null> {
+  protected async parseExpression(withBinaryExpressions = true): Promise<Expression | null> {
     if (!this.lookahead) {
       return null;
     }
@@ -551,7 +561,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return expression;
   }
 
-  async parsePrefixExpression(): Promise<PrefixExpression | null> {
+  protected async parsePrefixExpression(): Promise<PrefixExpression | null> {
     let expression: PrefixExpression;
     if (this.consume('(')) {
       const parentheses = await this.parseExpression();
@@ -612,7 +622,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return expression;
   }
 
-  async parseArguments(): Promise<Arguments> {
+  protected async parseArguments(): Promise<Arguments> {
     if (this.lookahead?.type === TokenType.String) {
       return new StringArguments(this.parseStringExpression());
     }
@@ -625,12 +635,12 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return new ExpressionListArguments(expressions);
   }
 
-  isIdentifier(): boolean {
+  protected isIdentifier(): boolean {
     // : this.lookahead is Token & { type: TokenType.Identifier }
     return this.lookahead?.type === TokenType.Identifier && !this.keywords[this.lookahead.value];
   }
 
-  parseName(): Name {
+  protected parseName(): Name {
     if (this.lookahead?.type !== TokenType.Identifier) {
       throw this.parserError('expected name');
     }
@@ -643,23 +653,22 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return new Name(next.value);
   }
 
-  parseNameList(): NameList | null {
+  protected parseNameList(): NameList | null {
     if (!this.isIdentifier()) {
       return null;
     }
-    const names: Name[] = [];
-    names.push(this.parseName());
+    const names = [this.parseName()];
     while (this.consume(',')) {
       names.push(this.parseName());
     }
     return new NameList(names);
   }
 
-  isParameter() {
+  protected isParameter() {
     return this.isIdentifier() || this.lookahead?.value === '...';
   }
 
-  parseParameterList(): ParameterList {
+  protected parseParameterList(): ParameterList {
     if (!this.isParameter()) {
       return new ParameterList(new NameList([]), false);
     }
@@ -680,7 +689,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return new ParameterList(new NameList(names), hasVararg);
   }
 
-  async parseFuncBody(): Promise<FuncBody> {
+  protected async parseFuncBody(): Promise<FuncBody> {
     this.expect('(');
     const parameters = this.parseParameterList();
     this.expect(')');
@@ -689,13 +698,13 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return new FuncBody(parameters, body);
   }
 
-  async parseFunctionExpression(): Promise<Expression> {
+  protected async parseFunctionExpression(): Promise<Expression> {
     this.expect('function');
     const body = await this.parseFuncBody();
     return new FunctionExpression(body);
   }
 
-  generateDigits(radix: number): { [key: number]: number } {
+  protected generateDigits(radix: number): { [key: number]: number } {
     const digits: { [key: number]: number } = {};
     for (let i = 0; i < Math.min(10, radix); i++) {
       digits[CharCodes.DIGIT_0 + i] = i;
@@ -710,7 +719,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return digits;
   }
 
-  calculateNumber(value: Uint8Array, radix: number): number {
+  protected calculateNumber(value: Uint8Array, radix: number): number {
     const digits = this.generateDigits(radix);
     const startIndex = radix === 16 ? 2 : 0;
     let retn = 0;
@@ -785,7 +794,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return retn;
   }
 
-  hexToNumber(hex: CharCodes): number {
+  protected hexToNumber(hex: CharCodes): number {
     if (hex >= CharCodes.DIGIT_0 && hex <= CharCodes.DIGIT_9) {
       return hex - CharCodes.DIGIT_0;
     } else if (hex >= CharCodes.LATIN_SMALL_A && hex <= CharCodes.LATIN_SMALL_F) {
@@ -797,7 +806,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     }
   }
 
-  parseNumberExpression(): Expression {
+  protected parseNumberExpression(): Expression {
     const raw = this.next;
     if (!raw) {
       throw this.parserError('expected number');
@@ -822,7 +831,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return new NumberExpression(raw.value, value);
   }
 
-  parseStringExpression(): StringExpression {
+  protected parseStringExpression(): StringExpression {
     const raw = this.next;
     if (!raw || raw.type !== TokenType.String) {
       throw this.parserError('expected string');
@@ -907,7 +916,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return new StringExpression(raw.value, value);
   }
 
-  async parseField(): Promise<Field | null> {
+  protected async parseField(): Promise<Field | null> {
     if (this.consume('[')) {
       const key = await this.parseExpression();
       if (!key) {
@@ -943,7 +952,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     }
   }
 
-  async parseTableConstructorExpression(): Promise<TableConstructorExpression> {
+  protected async parseTableConstructorExpression(): Promise<TableConstructorExpression> {
     this.expect('{');
     const fields: Field[] = [];
     while (!this.consume('}')) {
