@@ -1,4 +1,3 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import { StringExpression } from '../exp/string-expression.js';
 import { StringArguments } from './string.js';

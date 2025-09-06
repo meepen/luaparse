@@ -1,25 +1,26 @@
 {
   "compilerOptions": {
     "isolatedModules": true,
-    "baseUrl": "src",
-    "paths": {
-      "#src": ["."],
-      "#src/*": ["./*"],
-    },
-    "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "node",
-    "lib": ["ESNext"],
-    "esModuleInterop": true,
+    "target": "es2015",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "allowSyntheticDefaultImports": true,
     "sourceMap": true,
     "noImplicitAny": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "outDir": "dist",
     "strict": true,
-    "declaration": true
+    "declaration": true,
+    "downlevelIteration": true,
+    "esModuleInterop": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "test"]
+  "include": [],
+  "exclude": [
+    "node_modules"
+  ],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.test.json" },
+    { "path": "./tsconfig.config.json" }
+  ]
 }

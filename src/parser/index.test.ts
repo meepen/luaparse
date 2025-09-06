@@ -1,5 +1,3 @@
-import { describe, it } from 'node:test';
-
 import { LuaVersion, createParser } from './index.js';
 import { PUCRio_v5_1_Parser } from './versions/puc-rio-5-1.js';
 import assert from 'node:assert';

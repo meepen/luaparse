@@ -1,4 +1,3 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import { MethodFunctionCall } from './method.js';
 import { NameVariable } from '../variable/name-variable.js';

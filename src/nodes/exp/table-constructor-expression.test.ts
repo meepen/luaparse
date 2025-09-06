@@ -1,4 +1,3 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import { TableConstructorExpression } from './table-constructor-expression.js';
 import { FieldArrayKey } from '../fields/array-key.js';

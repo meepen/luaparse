@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "types": ["vitest/globals"]
+  },
+  "include": [
+    "src/test/**/*.ts",
+    "src/**/*.test.ts"
+  ],
+  "exclude": [
+    "src/**/*.d.ts"
+  ],
+  "references": [
+    { "path": "./tsconfig.app.json" }
+  ]
+}

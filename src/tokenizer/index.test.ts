@@ -1,4 +1,3 @@
-import { describe, it } from 'node:test';
 import { Token, Tokenizer } from './index.js';
 import assert from 'node:assert';
 

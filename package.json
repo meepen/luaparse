@@ -25,20 +25,23 @@
   "scripts": {
     "build": "rimraf dist && tsc",
     "bin": "npm run build && node --enable-source-maps dist/bin.js",
-    "test": "npx c8 node --loader tsx run-tests.ts"
+    "pretest": "eslint .",
+    "test": "vitest run"
   },
   "devDependencies": {
-    "@types/node": "^20.8.3",
-    "@typescript-eslint/eslint-plugin": "^6.7.4",
-    "c8": "^8.0.1",
-    "eslint": "^8.51.0",
-    "eslint-config-prettier": "^9.0.0",
-    "eslint-plugin-prettier": "^5.0.0",
-    "glob": "^10.3.10",
-    "prettier": "^3.0.3",
-    "rimraf": "^5.0.5",
-    "tsx": "^3.13.0",
-    "typescript": "^5.2.2"
+    "@eslint/js": "^9.35.0",
+    "@types/node": "^22",
+    "@vitest/coverage-v8": "^3.2.4",
+    "eslint": "^9.35.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "jiti": "^2.5.1",
+    "prettier": "^3.6.2",
+    "rimraf": "^6.0.1",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.42.0",
+    "vitest": "^3.2.4"
   },
   "author": {
     "email": "meep@meepen.dev",

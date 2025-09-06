@@ -1,4 +1,3 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import { TableConstructorExpression } from '../exp/table-constructor-expression.js';
 import { TableConstructorArguments } from './table-constructor.js';

@@ -1,4 +1,3 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import { ExpressionList } from '../explist.js';
 import { TrueExpression } from '../exp/true-expression.js';

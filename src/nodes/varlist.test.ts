@@ -1,4 +1,3 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import { VariableList } from './varlist.js';
 import { NameVariable } from './exp/index.js';

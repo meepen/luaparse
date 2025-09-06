@@ -1,4 +1,3 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import { BinaryOperationExpression } from './binary-expression.js';
 import { TrueExpression } from './true-expression.js';

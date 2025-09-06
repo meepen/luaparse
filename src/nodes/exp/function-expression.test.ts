@@ -1,4 +1,3 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import { Chunk } from '../chunk.js';
 import { ParameterList } from '../parlist.js';
