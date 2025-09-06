@@ -66,7 +66,7 @@ function createHashMap(...values: string[]): { [key: string]: true } {
 
 function createPrecedenceMap(...values: string[][]): { [key: string]: number } {
   const map = Object.create(null);
-  for (const [precedence, operators] of values.entries()) {
+  for (const [precedence, operators] of Object.entries(values.entries)) {
     for (const operator of operators) {
       map[operator] = precedence;
     }
@@ -802,7 +802,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
       throw this.parserError('expected number');
     }
 
-    let value: number;
+    let value: number | undefined;
 
     switch (raw.bytes[1]) {
       case CharCodes.LATIN_CAPITAL_X:
@@ -814,7 +814,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
         break;
     }
 
-    if (!value) {
+    if (value === undefined) {
       throw this.parserError('expected number');
     }
 

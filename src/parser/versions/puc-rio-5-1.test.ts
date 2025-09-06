@@ -1,5 +1,4 @@
 import { PUCRio_v5_1_Parser } from './puc-rio-5-1.js';
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import { StatementType } from '../../nodes/stat.js';
 import { NodeType } from '../../node.js';
@@ -3056,6 +3055,33 @@ describe('PUCRio_v5_1_Parser', () => {
                         expressionType: ExpressionType.NumberExpression,
                         raw: '0xdead.bEef',
                         value: 0xdead + 0xbeef * 16 ** -4,
+                        children: [],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          });
+        });
+
+        it('should parse 0', async () => {
+          const parser = new PUCRio_v5_1_Parser('return 0');
+          const chunk = await parser.parse();
+          shouldContain(chunk, {
+            body: [
+              {
+                type: NodeType.Statement,
+                statementType: StatementType.ReturnStatement,
+                children: [
+                  {
+                    type: NodeType.ExpressionList,
+                    children: [
+                      {
+                        type: NodeType.Expression,
+                        expressionType: ExpressionType.NumberExpression,
+                        raw: '0',
+                        value: 0,
                         children: [],
                       },
                     ],
