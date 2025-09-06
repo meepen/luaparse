@@ -6,8 +6,8 @@ export enum LuaVersion {
 }
 
 export interface AstParser {
-  luaVersion: LuaVersion;
-  source: string;
+  get luaVersion(): LuaVersion;
+  get source(): string;
 
   // As to not hoard the CPU when parsing large files, we parse async statement by statement
   // to allow the event loop to do its thing.

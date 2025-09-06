@@ -2,3 +2,10 @@ node_modules
 dist
 coverage
 .direnv
+
+src/**/*.js
+src/**/*.js.map
+src/**/*.d.ts
+
+*.tsbuildinfo
+*.tgz

@@ -15,7 +15,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git@github.com:meepen/luaparse.git"
+    "url": "https://github.com/meepen/luaparse.git"
   },
   "bugs": {
     "url": "https://github.com/meepen/luaparse/issues"
@@ -23,10 +23,12 @@
   "homepage": "https://meepen.dev/luaparse/",
   "type": "module",
   "scripts": {
-    "build": "rimraf dist && tsc",
+    "prebuild": "rimraf src/**/*.js src/**/*.js.map src/**/*.d.ts",
+    "build": "tsc --build tsconfig.app.json",
     "bin": "npm run build && node --enable-source-maps dist/bin.js",
     "pretest": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",
@@ -48,9 +50,5 @@
     "name": "Devin Korb",
     "url": "https://meepen.dev"
   },
-  "license": "MIT",
-  "imports": {
-    "#src/*": "./dist/*",
-    "#src": "./dist/index.js"
-  }
+  "license": "MIT"
 }

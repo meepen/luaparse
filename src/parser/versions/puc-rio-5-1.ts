@@ -66,7 +66,7 @@ function createHashMap(...values: string[]): { [key: string]: true } {
 
 function createPrecedenceMap(...values: string[][]): { [key: string]: number } {
   const map = Object.create(null);
-  for (const [precedence, operators] of Object.entries(values.entries)) {
+  for (const [precedence, operators] of Object.entries(values)) {
     for (const operator of operators) {
       map[operator] = precedence;
     }
@@ -101,7 +101,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     super(source, 4);
   }
 
-  static _keywords = createHashMap(
+  protected static _keywords = createHashMap(
     'and',
     'break',
     'do',
@@ -125,7 +125,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     'while',
   );
 
-  static _binaryOperators = createHashMap(
+  protected static _binaryOperators = createHashMap(
     '+',
     '-',
     '*',
@@ -143,7 +143,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     'or',
   );
 
-  static _binaryOperatorPrecedence = createPrecedenceMap(
+  protected static _binaryOperatorPrecedence = createPrecedenceMap(
     ['or'],
     ['and'],
     ['<', '>', '<=', '>=', '~=', '=='],
@@ -154,7 +154,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
   );
 
   // Digits are handled seperately
-  static _escapeMap = createStringEscapeMap(
+  protected static _escapeMap = createStringEscapeMap(
     [CharCodes.LINE_FEED, [CharCodes.LINE_FEED]],
     [CharCodes.CARRIAGE_RETURN, [CharCodes.CARRIAGE_RETURN]],
     [CharCodes.APOSTROPHE, [CharCodes.APOSTROPHE]],
@@ -170,17 +170,18 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     [CharCodes.LATIN_SMALL_Z, []],
   );
 
-  readonly keywords = PUCRio_v5_1_Parser._keywords;
-  readonly binaryOperators = PUCRio_v5_1_Parser._binaryOperators;
-  readonly binaryOperatorPrecedence = PUCRio_v5_1_Parser._binaryOperatorPrecedence;
-  readonly escapeMap = PUCRio_v5_1_Parser._escapeMap;
+  protected readonly keywords = PUCRio_v5_1_Parser._keywords;
+  protected readonly binaryOperators = PUCRio_v5_1_Parser._binaryOperators;
+  protected readonly binaryOperatorPrecedence = PUCRio_v5_1_Parser._binaryOperatorPrecedence;
+  protected readonly escapeMap = PUCRio_v5_1_Parser._escapeMap;
 
-  static unaryOperators = createHashMap('-', 'not', '#');
+  protected static unaryOperators = createHashMap('-', 'not', '#');
 
-  get luaVersion() {
+  public get luaVersion() {
     return LuaVersion.PUCRio_v5_1;
   }
-  async parse(): Promise<Chunk> {
+
+  public async parse(): Promise<Chunk> {
     const chunk = await this.parseBlock();
     if (!this.eof) {
       throw this.parserError('unexpected token');
@@ -188,11 +189,11 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return chunk;
   }
 
-  parserError(message: string) {
+  protected parserError(message: string) {
     return new LuaParserError(message, this);
   }
 
-  async parseBlock(): Promise<Chunk> {
+  protected async parseBlock(): Promise<Chunk> {
     const statements: Statement[] = [];
     while (!this.eof) {
       const statement = await this.parseStatement();

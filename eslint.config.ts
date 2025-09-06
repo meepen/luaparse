@@ -5,6 +5,9 @@ import prettierConfig from 'eslint-config-prettier';
 import eslintPluginPrettier from 'eslint-plugin-prettier';
 
 export default defineConfig(
+  {
+    ignores: ['**/*.js', '**/*.js.map', '**/*.d.ts'],
+  },
   eslint.configs.recommended,
   tseslint.configs.recommended,
   {
