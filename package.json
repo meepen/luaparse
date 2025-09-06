@@ -23,12 +23,14 @@
   "homepage": "https://meepen.dev/luaparse/",
   "type": "module",
   "scripts": {
-    "prebuild": "rimraf src/**/*.js src/**/*.js.map src/**/*.d.ts",
+  "prebuild": "rimraf dist src/**/*.js src/**/*.js.map src/**/*.d.ts",
     "build": "tsc --build tsconfig.app.json",
     "bin": "npm run build && node --enable-source-maps dist/bin.js",
     "pretest": "eslint .",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+  "test:coverage": "vitest run --coverage",
+  "coverage:badge": "node scripts/gen-coverage-badge.mjs",
+  "postcoverage": "npm run coverage:badge"
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",
@@ -50,5 +52,12 @@
     "name": "Devin Korb",
     "url": "https://meepen.dev"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "exports": {
+    ".": {
+      "import": "./dist/src/index.js",
+      "types": "./dist/src/index.d.ts"
+    },
+    "./package.json": "./package.json"
+  }
 }

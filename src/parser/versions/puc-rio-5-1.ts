@@ -66,7 +66,7 @@ function createHashMap(...values: string[]): { [key: string]: true } {
 
 function createPrecedenceMap(...values: string[][]): { [key: string]: number } {
   const map = Object.create(null);
-  for (const [precedence, operators] of Object.entries(values)) {
+  for (const [precedence, operators] of values.entries()) {
     for (const operator of operators) {
       map[operator] = precedence;
     }

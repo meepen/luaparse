@@ -1,0 +1,65 @@
+name: Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Lint & Test (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            accept-flake-config = true
+
+      - name: Cache NPM
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ matrix.node }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ matrix.node }}-
+            ${{ runner.os }}-node-
+
+      - name: Use Node ${{ matrix.node }} (override shell default)
+        run: |
+          echo "Installing Node version ${{ matrix.node }}"
+          nix profile install nixpkgs#nodejs_${{ matrix.node }}
+          echo "which node: $(which node)" && node -v
+
+      - name: Install deps
+        run: |
+          nix develop -c bash -euxo pipefail -c 'npm ci'
+
+      - name: Test
+        run: |
+          nix develop -c bash -euxo pipefail -c 'npm test'
+
+      - name: Coverage (artifact)
+        if: always() && matrix.node == '22' && !env.ACT
+        run: |
+          nix develop -c bash -euxo pipefail -c 'npm run test:coverage'
+
+      - name: Upload coverage
+        if: always() && matrix.node == '22' && !env.ACT
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage
+
+      - name: Skip artifact upload (act)
+        if: ${{ env.ACT }}
+        run: echo "Skipping artifact upload under act local run"

@@ -15,6 +15,7 @@
           buildInputs = [
             pkgs.nodejs_22
             pkgs.nodePackages.npm
+            pkgs.act
           ];
         };
       }
