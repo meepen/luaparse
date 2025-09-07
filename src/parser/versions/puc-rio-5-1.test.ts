@@ -3353,6 +3353,33 @@ describe('PUCRio_v5_1_Parser', () => {
             ],
           });
         });
+        it('should parse decimals without a leading digit', async () => {
+          const parser = new PUCRio_v5_1_Parser('return .2');
+          const chunk = await parser.parse();
+
+          shouldContain(chunk, {
+            body: [
+              {
+                type: NodeType.Statement,
+                statementType: StatementType.ReturnStatement,
+                children: [
+                  {
+                    type: NodeType.ExpressionList,
+                    children: [
+                      {
+                        type: NodeType.Expression,
+                        expressionType: ExpressionType.NumberExpression,
+                        raw: '.2',
+                        value: 0.2,
+                        children: [],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          });
+        });
         it('should parse decimals with exponents', async () => {
           const parser = new PUCRio_v5_1_Parser('return 1.2e3');
           const chunk = await parser.parse();

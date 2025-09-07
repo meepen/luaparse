@@ -295,6 +295,10 @@ export class Tokenizer implements TokenizerState {
           if (this.peekChar() === CharCodes.FULL_STOP) {
             this.nextChar();
           }
+          // check for numbers
+        } else if (isValidDecimalChar(this.peekChar())) {
+          this.processNumber(nextChar);
+          tokenType = TokenType.Number;
         }
         break;
 

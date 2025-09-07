@@ -91,6 +91,12 @@ describe('Tokenizer', () => {
       assert(!tokenizer.next);
     });
 
+    it('should tokenize with decimals without leading digit', () => {
+      const tokenizer = new Tokenizer('.123');
+      assertToken(tokenizer.next, '.123', 1, 1);
+      assert(!tokenizer.next);
+    });
+
     it('should tokenize with exponents', () => {
       const tokenizer = new Tokenizer('123.456e2 123E2');
       assertToken(tokenizer.next, '123.456e2', 1, 1);
