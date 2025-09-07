@@ -59,7 +59,7 @@ export function isValidHexChar(char: number) {
   );
 }
 
-function isValidBinaryChar(char: number) {
+export function isValidBinaryChar(char: number) {
   return char === CharCodes.DIGIT_0 || char === CharCodes.DIGIT_1;
 }
 
@@ -75,12 +75,12 @@ export class Tokenizer implements TokenizerState {
   ) {
     this.input = {
       value,
-      bytes: Tokenizer.textEncoder.encode(value),
+      bytes: this.textEncoder.encode(value),
     };
   }
 
-  protected static readonly textEncoder = textEncoder;
-  protected static readonly textDecoder = textDecoder;
+  protected readonly textEncoder = textEncoder;
+  protected readonly textDecoder = textDecoder;
 
   public readonly input: StringBytes;
 
@@ -374,10 +374,16 @@ export class Tokenizer implements TokenizerState {
     this.getNext();
   }
 
-  public consume(expected: string) {
+  /**
+   * Consumes a token if it matches the expected value.
+   * @param expected The expected token value.
+   * @returns The consumed token or null if it didn't match.
+   */
+  public consume(expected: string): Token | null {
     if (this.lookahead?.value === expected) {
       return this.next;
     }
+    return null;
   }
 
   public expect(expected: string) {

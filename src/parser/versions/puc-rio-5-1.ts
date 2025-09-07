@@ -955,7 +955,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
   protected async parseTableConstructorExpression(): Promise<TableConstructorExpression> {
     this.expect('{');
     const fields: Field[] = [];
-    while (!this.consume('}')) {
+    while (this.lookahead?.value !== '}') {
       if (this.eof) {
         throw this.parserError("expected '}'");
       }
@@ -967,10 +967,11 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
 
       fields.push(field);
       if (!this.consume(',') && !this.consume(';')) {
-        this.expect('}');
         break;
       }
     }
+
+    this.expect('}');
 
     return new TableConstructorExpression(fields);
   }
