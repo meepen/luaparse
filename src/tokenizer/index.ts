@@ -123,10 +123,22 @@ export class Tokenizer implements TokenizerState {
     return this.pos >= this.input.bytes.length;
   }
 
-  protected nextChar(columnIncrease = 1) {
+  protected nextChar() {
+    const columnIncrease = this.peekChar() === CharCodes.TAB ? this.tabSize : 1;
     this.columnNumber += columnIncrease;
-    return this.input.bytes[this.pos++];
+    const chr = this.input.bytes[this.pos++];
+    if (this.isNewLine(chr)) {
+      // CRLF check
+      if (chr === CharCodes.CARRIAGE_RETURN && this.peekChar() === CharCodes.LINE_FEED) {
+        this.nextChar();
+      }
+      this.lineNumber++;
+      this.columnNumber = 1;
+    }
+
+    return chr;
   }
+
   protected peekChar(ahead = 0) {
     return this.input.bytes[this.pos + ahead];
   }
@@ -242,15 +254,7 @@ export class Tokenizer implements TokenizerState {
       if (!this.isWhitespace(this.peekChar())) {
         break;
       }
-      const nextChar = this.nextChar(this.peekChar() === CharCodes.TAB ? this.tabSize : 1);
-      if (this.isNewLine(nextChar)) {
-        // CRLF check
-        if (nextChar === CharCodes.CARRIAGE_RETURN && this.peekChar() === CharCodes.LINE_FEED) {
-          this.nextChar();
-        }
-        this.lineNumber++;
-        this.columnNumber = 1;
-      }
+      this.nextChar();
     }
 
     // Check EOF
