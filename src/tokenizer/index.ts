@@ -75,23 +75,23 @@ export class Tokenizer implements TokenizerState {
   ) {
     this.input = {
       value,
-      bytes: this.textEncoder.encode(value),
+      bytes: Tokenizer.textEncoder.encode(value),
     };
   }
 
-  readonly textEncoder = textEncoder;
-  readonly textDecoder = textDecoder;
+  protected static readonly textEncoder = textEncoder;
+  protected static readonly textDecoder = textDecoder;
 
-  public input: StringBytes;
+  public readonly input: StringBytes;
 
   // Points at the next byte to be read
   public pos = 0;
   public lineNumber = 1;
   public columnNumber = 1;
 
-  private _lookahead?: Token;
+  protected _lookahead?: Token;
 
-  private isWhitespace(char: number) {
+  protected isWhitespace(char: number) {
     return (
       char === CharCodes.SPACE ||
       char === CharCodes.TAB ||
@@ -101,11 +101,11 @@ export class Tokenizer implements TokenizerState {
     );
   }
 
-  private isNewLine(char: number) {
+  protected isNewLine(char: number) {
     return char === CharCodes.LINE_FEED || char === CharCodes.CARRIAGE_RETURN;
   }
 
-  private isIdentifierStart(char: number) {
+  protected isIdentifierStart(char: number) {
     return (
       (char >= CharCodes.LATIN_SMALL_A && char <= CharCodes.LATIN_SMALL_Z) ||
       (char >= CharCodes.LATIN_CAPITAL_A && char <= CharCodes.LATIN_CAPITAL_Z) ||
@@ -115,23 +115,23 @@ export class Tokenizer implements TokenizerState {
     );
   }
 
-  private isIdentifierPart(char: number) {
+  protected isIdentifierPart(char: number) {
     return this.isIdentifierStart(char) || (char >= CharCodes.DIGIT_0 && char <= CharCodes.DIGIT_9);
   }
 
-  get eof() {
+  public get eof() {
     return this.pos >= this.input.bytes.length;
   }
 
-  private nextChar(columnIncrease = 1) {
+  protected nextChar(columnIncrease = 1) {
     this.columnNumber += columnIncrease;
     return this.input.bytes[this.pos++];
   }
-  private peekChar(ahead = 0) {
+  protected peekChar(ahead = 0) {
     return this.input.bytes[this.pos + ahead];
   }
 
-  private processSimpleString(quoteChar: number) {
+  protected processSimpleString(quoteChar: number) {
     while (!this.eof) {
       const nextChar = this.nextChar();
       if (nextChar === quoteChar) {
@@ -143,7 +143,7 @@ export class Tokenizer implements TokenizerState {
     throw new Error(`expected '${String.fromCharCode(quoteChar)}' near <eof>`);
   }
 
-  private processLongString(index = 0): boolean {
+  protected processLongString(index = 0): boolean {
     // First detect any = signs
     let equalsCount = 0;
     while (this.peekChar(index + equalsCount) === CharCodes.EQUALS_SIGN) {
@@ -185,7 +185,7 @@ export class Tokenizer implements TokenizerState {
     throw new Error('expected end of long string');
   }
 
-  private processNumber(nextChar: number) {
+  protected processNumber(nextChar: number) {
     // Tokenize numbers
     // Numbers can be either integers, decimals, hexadecimals (0xabcd) and can include decimals (0xabcd.ef),
     // exponents (1e10), binary (0b1010)
@@ -234,7 +234,7 @@ export class Tokenizer implements TokenizerState {
     }
   }
 
-  get lookahead(): Token | undefined {
+  public get lookahead(): Token | undefined {
     if (this._lookahead !== undefined) {
       return this._lookahead;
     }
@@ -354,7 +354,7 @@ export class Tokenizer implements TokenizerState {
     ));
   }
 
-  private getNext() {
+  protected getNext() {
     const next = this.lookahead;
     if (!next) {
       return null;
@@ -366,21 +366,21 @@ export class Tokenizer implements TokenizerState {
     return next;
   }
 
-  get next(): Token | null {
+  public get next(): Token | null {
     return this.getNext();
   }
 
-  skip() {
+  public skip() {
     this.getNext();
   }
 
-  consume(expected: string) {
+  public consume(expected: string) {
     if (this.lookahead?.value === expected) {
       return this.next;
     }
   }
 
-  expect(expected: string) {
+  public expect(expected: string) {
     const next = this.next;
     if (!next) {
       throw new Error(`expected '${expected}' near <eof>`);
