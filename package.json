@@ -29,11 +29,11 @@
     "bin": "npm run build && node --enable-source-maps dist/bin.js",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:resource": "cd utilities && npm run resource-test",
+    "test:resource": "tsx utilities/test.ts",
     "test:coverage": "vitest run --coverage",
     "coverage:badge": "node scripts/gen-coverage-badge.mjs",
     "postcoverage": "npm run coverage:badge",
-    "speedtest": "cd utilities && npm run speedtest"
+    "speedtest": "tsx utilities/speed.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",
