@@ -102,7 +102,7 @@ export class Tokenizer implements TokenizerState {
   }
 
   private isNewLine(char: number) {
-    return char === CharCodes.LINE_FEED || char === CharCodes.CARRIAGE_RETURN || !char;
+    return char === CharCodes.LINE_FEED || char === CharCodes.CARRIAGE_RETURN;
   }
 
   private isIdentifierStart(char: number) {
@@ -234,7 +234,7 @@ export class Tokenizer implements TokenizerState {
     }
   }
 
-  get lookahead(): Token | null {
+  get lookahead(): Token | undefined {
     if (this._lookahead !== undefined) {
       return this._lookahead;
     }
@@ -255,7 +255,7 @@ export class Tokenizer implements TokenizerState {
 
     // Check EOF
     if (this.pos >= this.input.bytes.length) {
-      return null;
+      return undefined;
     }
 
     // We have a token next, determine what it is
@@ -303,7 +303,7 @@ export class Tokenizer implements TokenizerState {
           // check for long string
           if (this.peekChar() !== CharCodes.LEFT_SQUARE_BRACKET || !this.processLongString(1)) {
             // skip until newline for single line comments
-            while (!this.isNewLine(this.peekChar())) {
+            while (!this.eof && !this.isNewLine(this.peekChar())) {
               this.nextChar();
             }
           }

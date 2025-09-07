@@ -15,7 +15,7 @@ export interface AstParser {
 }
 
 export function createParser(luaVersion: LuaVersion, source: string): AstParser {
-  switch (luaVersion) {
+  switch (luaVersion as unknown) {
     case LuaVersion.PUCRio_v5_1:
       return new PUCRio_v5_1_Parser(source);
     default:

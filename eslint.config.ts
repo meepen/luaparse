@@ -9,7 +9,25 @@ export default defineConfig(
     ignores: ['**/*.js', '**/*.js.map', '**/*.d.ts'],
   },
   eslint.configs.recommended,
-  tseslint.configs.recommended,
+  tseslint.configs.recommendedTypeChecked,
+  {
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+        project: './tsconfig.json',
+      },
+    },
+    rules: {
+      '@typescript-eslint/strict-boolean-expressions': [
+        'error',
+        {
+          allowNumber: false,
+          allowString: false,
+        },
+      ],
+    },
+  },
   {
     plugins: {
       prettier: eslintPluginPrettier,

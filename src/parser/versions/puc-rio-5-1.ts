@@ -57,7 +57,7 @@ import { TokenType, Tokenizer, isValidHexChar } from '../../tokenizer/index.js';
 import { AstParser, LuaVersion } from '../index.js';
 
 function createHashMap(...values: string[]): { [key: string]: true } {
-  const map = Object.create(null);
+  const map = Object.create(null) as { [key: string]: true };
   for (const value of values) {
     map[value] = true;
   }
@@ -65,7 +65,7 @@ function createHashMap(...values: string[]): { [key: string]: true } {
 }
 
 function createPrecedenceMap(...values: string[][]): { [key: string]: number } {
-  const map = Object.create(null);
+  const map = Object.create(null) as { [key: string]: number };
   for (const [precedence, operators] of values.entries()) {
     for (const operator of operators) {
       map[operator] = precedence;
@@ -74,8 +74,8 @@ function createPrecedenceMap(...values: string[][]): { [key: string]: number } {
   return map;
 }
 
-function createStringEscapeMap(...values: [CharCodes, CharCodes[]][]): (CharCodes[] | null)[] {
-  const map = new Array<CharCodes[] | null>(256).fill(null);
+function createStringEscapeMap(...values: [number, number[]][]): (number[] | null)[] {
+  const map = new Array<number[] | null>(256).fill(null);
   for (const [from, to] of values) {
     map[from] = to;
   }
@@ -524,7 +524,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
 
     // binary
     const binaryParts: { operator: string; right: Expression }[] = [];
-    while (withBinaryExpressions && expression && this.binaryOperators[this.lookahead?.value]) {
+    while (withBinaryExpressions && this.binaryOperators[this.lookahead?.value]) {
       const binaryOperator = this.next!;
       const right = await this.parseExpression(false);
       if (!right) {
@@ -546,7 +546,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
         binaryParts.splice(next.index, 1);
         // create the binary expression
         const leftIndex = next.index - 1;
-        const left: Expression = leftIndex === -1 ? expression! : binaryParts[leftIndex].right;
+        const left = leftIndex === -1 ? expression : binaryParts[leftIndex].right;
 
         const newExpr: BinaryOperationExpression = new BinaryOperationExpression(left, next.operator, next.right);
 
@@ -576,15 +576,15 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
       return null;
     }
 
-    let lookahead: string | undefined;
-    while (
-      ((lookahead = this.lookahead?.value),
+    for (
+      let lookahead = this.lookahead?.value;
       this.consume('[') ||
-        this.consume('.') ||
-        this.consume(':') ||
-        lookahead === '(' ||
-        lookahead === '{' ||
-        this.lookahead?.type === TokenType.String)
+      this.consume('.') ||
+      this.consume(':') ||
+      lookahead === '(' ||
+      lookahead === '{' ||
+      this.lookahead?.type === TokenType.String;
+      lookahead = this.lookahead?.value
     ) {
       switch (lookahead) {
         case '[': {
@@ -593,7 +593,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
             throw this.parserError('expected expression');
           }
           this.expect(']');
-          expression = new IndexedVariable(expression, index!);
+          expression = new IndexedVariable(expression, index);
           break;
         }
 
@@ -732,7 +732,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
         decimalIndex = i;
       } else if (
         (raw === CharCodes.LATIN_SMALL_E || raw === CharCodes.LATIN_CAPITAL_E) &&
-        !digits[CharCodes.LATIN_CAPITAL_E]
+        !(CharCodes.LATIN_CAPITAL_E in digits)
       ) {
         if (decimalIndex > i) {
           decimalIndex = i;
@@ -757,7 +757,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     for (let i = decimalIndex + 1; i < exponentIndex; i++) {
       const raw = value[i + startIndex];
       const digit = digits[raw];
-      if (!digit) {
+      if (digit === undefined) {
         throw this.parserError('malformed number');
       }
       retn += digit * radix ** exponent--;
@@ -782,7 +782,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
       for (let i = value.length - 1; i > exponentIndex + startIndex; i--) {
         const raw = value[i];
         const digit = exponentDigits[raw];
-        if (!digit) {
+        if (digit === undefined) {
           throw this.parserError('malformed number');
         }
         exponentValue += digit * 10 ** exponent++;
@@ -794,7 +794,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return retn;
   }
 
-  protected hexToNumber(hex: CharCodes): number {
+  protected charCodeToNumberValue(hex: number): number {
     if (hex >= CharCodes.DIGIT_0 && hex <= CharCodes.DIGIT_9) {
       return hex - CharCodes.DIGIT_0;
     } else if (hex >= CharCodes.LATIN_SMALL_A && hex <= CharCodes.LATIN_SMALL_F) {
@@ -837,7 +837,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
       throw this.parserError('expected string');
     }
     const bytes = raw.bytes;
-    const str: CharCodes[] = [];
+    const str: number[] = [];
     switch (bytes[0]) {
       case CharCodes.APOSTROPHE:
       case CharCodes.QUOTATION_MARK:
@@ -845,7 +845,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
           const byte = bytes[i];
           if (byte === CharCodes.BACKSLASH) {
             const escape = bytes[i + 1];
-            if (escape && (escape === CharCodes.LATIN_CAPITAL_X || escape === CharCodes.LATIN_SMALL_X)) {
+            if (escape !== undefined && (escape === CharCodes.LATIN_CAPITAL_X || escape === CharCodes.LATIN_SMALL_X)) {
               // hex
               const hex0 = bytes[i + 2];
               const hex1 = bytes[i + 3];
@@ -853,13 +853,13 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
                 throw this.parserError('invalid escape sequence');
               }
 
-              str.push(this.hexToNumber(hex0) * 16 + this.hexToNumber(hex1));
+              str.push(this.charCodeToNumberValue(hex0) * 16 + this.charCodeToNumberValue(hex1));
               i += 3;
-            } else if (escape && escape >= CharCodes.DIGIT_0 && escape <= CharCodes.DIGIT_9) {
+            } else if (escape !== undefined && escape >= CharCodes.DIGIT_0 && escape <= CharCodes.DIGIT_9) {
               let decimal0 = bytes[i + 1];
-              let decimal1 = bytes[i + 2] || 0;
-              let decimal2 = bytes[i + 3] || 0;
-              if (!decimal0) {
+              let decimal1 = bytes[i + 2] ?? 0;
+              let decimal2 = bytes[i + 3] ?? 0;
+              if (decimal0 === undefined) {
                 throw this.parserError('invalid escape sequence');
               }
 

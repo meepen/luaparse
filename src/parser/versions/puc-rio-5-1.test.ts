@@ -31,6 +31,7 @@ function shouldContain<Type>(_actual: unknown, _expected: Type, _dataName = 'dat
       }
     } else {
       assert(typeof actual === typeof expected, `Expected ${dataName} to be type ${typeof expected}`);
+      // eslint-disable-next-line @typescript-eslint/no-base-to-string, @typescript-eslint/restrict-template-expressions
       assert(actual === expected, `Expected ${dataName} to be ${expected}, got ${actual}`);
     }
   }
