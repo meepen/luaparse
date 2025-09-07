@@ -1,0 +1,16 @@
+{
+  "scripts": {
+    "start": "tsx src/speed.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/luaparse": "^0.2.12",
+    "typescript": "^5.9.2",
+    "tsx": "^4.20.5"
+  },
+  "dependencies": {
+    "tinybench": "^5.0.1",
+    "luaparse": "^0.3.1"
+  },
+  "type": "module"
+}

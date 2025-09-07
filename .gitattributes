@@ -1,0 +1,6 @@
+# Ignore resource files
+/resources/*
+
+# Ignore package-lock.json
+package-lock.json
+/speedtest/package-lock.json

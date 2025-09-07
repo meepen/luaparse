@@ -10,10 +10,9 @@
   "keywords": [
     "lua",
     "parser",
-    "ast",
-    "tokenizer",
-    "types",
-    "typescript"
+    "parsing",
+    "luaparse",
+    "ast"
   ],
   "repository": {
     "type": "git",

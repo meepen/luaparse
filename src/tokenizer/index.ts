@@ -312,8 +312,16 @@ export class Tokenizer implements TokenizerState {
 
       // default for 1 char tokens
       default:
+        // Check for shebang
+        if (start.pos === 0 && start.lineNumber === 1 && nextChar === CharCodes.NUMBER_SIGN) {
+          // Shebang line, skip to end of line
+          while (!this.eof && !this.isNewLine(this.peekChar())) {
+            this.nextChar();
+          }
+          tokenType = TokenType.Comment;
+        }
         // check if it's part of an identifier or keyword
-        if (this.isIdentifierStart(nextChar)) {
+        else if (this.isIdentifierStart(nextChar)) {
           tokenType = TokenType.Identifier;
           while (this.isIdentifierPart(this.peekChar())) {
             this.nextChar();
@@ -378,7 +386,7 @@ export class Tokenizer implements TokenizerState {
       throw new Error(`expected '${expected}' near <eof>`);
     }
     if (next.value !== expected) {
-      throw new Error(`expected '${expected}' near '${next.value}'`);
+      throw new Error(`expected '${expected}' near '${next.value}' at ${next.lineNumber}:${next.columnNumber}`);
     }
   }
 }

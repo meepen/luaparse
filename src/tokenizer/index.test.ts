@@ -185,4 +185,13 @@ describe('Tokenizer', () => {
     assertToken(tokenizer.next, 'a', 1, 4);
     assert(!tokenizer.next);
   });
+
+  it('should tokenize shebang line as a comment', () => {
+    const tokenizer = new Tokenizer('#!/usr/bin/env lua\na = 1', 2, false);
+    assertToken(tokenizer.next, '#!/usr/bin/env lua', 1, 1);
+    assertToken(tokenizer.next, 'a', 2, 1);
+    assertToken(tokenizer.next, '=', 2, 3);
+    assertToken(tokenizer.next, '1', 2, 5);
+    assert(!tokenizer.next);
+  });
 });

@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "isolatedModules": true,
-    "target": "es2015",
+    "target": "esnext",
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "allowSyntheticDefaultImports": true,
@@ -21,6 +21,7 @@
   "references": [
     { "path": "./tsconfig.app.json" },
     { "path": "./tsconfig.test.json" },
-    { "path": "./tsconfig.config.json" }
+    { "path": "./tsconfig.config.json" },
+    { "path": "./tsconfig.speedtest.json" }
   ]
 }
