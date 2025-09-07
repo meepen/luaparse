@@ -771,8 +771,11 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
 
     if (exponentIndex !== value.length - startIndex) {
       let exponentSign = 1;
-      if (value[exponentIndex + startIndex] === CharCodes.HYPHEN_MINUS) {
+      const firstChar = value[exponentIndex + startIndex + 1];
+      if (firstChar === CharCodes.HYPHEN_MINUS) {
         exponentSign = -1;
+        exponentIndex++;
+      } else if (firstChar === CharCodes.PLUS_SIGN) {
         exponentIndex++;
       }
 

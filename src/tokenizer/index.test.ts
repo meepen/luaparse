@@ -119,6 +119,13 @@ describe('Tokenizer', () => {
       assertToken(tokenizer.next, '0b1111.1010', 1, 8);
       assert(!tokenizer.next);
     });
+
+    it('should tokenize negative exponents', () => {
+      const tokenizer = new Tokenizer('-56e-2');
+      assertToken(tokenizer.next, '-', 1, 1);
+      assertToken(tokenizer.next, '56e-2', 1, 2);
+      assert(!tokenizer.next);
+    });
   });
 
   describe('strings', () => {

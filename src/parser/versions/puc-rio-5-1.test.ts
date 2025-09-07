@@ -3380,6 +3380,60 @@ describe('PUCRio_v5_1_Parser', () => {
             ],
           });
         });
+        it('should parse with negative exponents', async () => {
+          const parser = new PUCRio_v5_1_Parser('return 56e-2');
+          const chunk = await parser.parse();
+
+          shouldContain(chunk, {
+            body: [
+              {
+                type: NodeType.Statement,
+                statementType: StatementType.ReturnStatement,
+                children: [
+                  {
+                    type: NodeType.ExpressionList,
+                    children: [
+                      {
+                        type: NodeType.Expression,
+                        expressionType: ExpressionType.NumberExpression,
+                        raw: '56e-2',
+                        value: 0.56,
+                        children: [],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          });
+        });
+        it('should parse with plus-prefixed exponents', async () => {
+          const parser = new PUCRio_v5_1_Parser('return 56e+2');
+          const chunk = await parser.parse();
+
+          shouldContain(chunk, {
+            body: [
+              {
+                type: NodeType.Statement,
+                statementType: StatementType.ReturnStatement,
+                children: [
+                  {
+                    type: NodeType.ExpressionList,
+                    children: [
+                      {
+                        type: NodeType.Expression,
+                        expressionType: ExpressionType.NumberExpression,
+                        raw: '56e+2',
+                        value: 5600,
+                        children: [],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          });
+        });
         it('should parse hexadecimals', async () => {
           const parser = new PUCRio_v5_1_Parser('return 0xdeadbEef');
           const chunk = await parser.parse();
