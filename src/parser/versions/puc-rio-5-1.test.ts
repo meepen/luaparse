@@ -3338,6 +3338,24 @@ describe('PUCRio_v5_1_Parser', () => {
               ],
             });
           });
+
+          it('should fail on unterminated simple string', async () => {
+            const parser = new PUCRio_v5_1_Parser('return "test');
+            await assert.rejects(parser.parse());
+          });
+
+          it('should fail on invalid hex escape', async () => {
+            const parser = new PUCRio_v5_1_Parser('return "\\xG1"');
+            await assert.rejects(parser.parse());
+          });
+          it('should fail on invalid decimal escape', async () => {
+            const parser = new PUCRio_v5_1_Parser('return "\\256"');
+            await assert.rejects(parser.parse());
+          });
+          it('should fail on incomplete escape', async () => {
+            const parser = new PUCRio_v5_1_Parser('return "\\ "');
+            await assert.rejects(parser.parse());
+          });
         });
 
         describe('long', () => {
@@ -3425,6 +3443,11 @@ describe('PUCRio_v5_1_Parser', () => {
           });
           it('should not parse mismatched levels of equals', async () => {
             const parser = new PUCRio_v5_1_Parser('return [=[test]==]');
+            await assert.rejects(parser.parse());
+          });
+
+          it('should fail on unterminated long string', async () => {
+            const parser = new PUCRio_v5_1_Parser('return [==[test]');
             await assert.rejects(parser.parse());
           });
         });
@@ -3716,6 +3739,38 @@ describe('PUCRio_v5_1_Parser', () => {
         it('should fail to parse decimal numbers with invalid characters', async () => {
           const parser = new PUCRio_v5_1_Parser('return 1.a');
           await assert.rejects(parser.parse(), 'malformed number');
+        });
+
+        it('should fail with missing exponent part', async () => {
+          const parser = new PUCRio_v5_1_Parser('return 1e');
+          await assert.rejects(parser.parse(), 'malformed number');
+        });
+
+        it('should support capital X in hex prefix', async () => {
+          const parser = new PUCRio_v5_1_Parser('return 0X1A');
+          const chunk = await parser.parse();
+          shouldContain(chunk, {
+            body: [
+              {
+                type: NodeType.Statement,
+                statementType: StatementType.ReturnStatement,
+                children: [
+                  {
+                    type: NodeType.ExpressionList,
+                    children: [
+                      {
+                        type: NodeType.Expression,
+                        expressionType: ExpressionType.NumberExpression,
+                        raw: '0X1A',
+                        value: 0x1a,
+                        children: [],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          });
         });
       });
     });
@@ -4111,6 +4166,76 @@ describe('PUCRio_v5_1_Parser', () => {
       it('should fail on unterminated expression field', async () => {
         const parser = new PUCRio_v5_1_Parser('return {[1]=');
         await assert.rejects(parser.parse());
+      });
+      it('should fail on unterminated table', async () => {
+        const parser = new PUCRio_v5_1_Parser('return {;');
+        await assert.rejects(parser.parse());
+      });
+      it('should fail on missing field value', async () => {
+        const parser = new PUCRio_v5_1_Parser('return {test = }');
+        await assert.rejects(parser.parse());
+      });
+    });
+
+    describe('expression list', () => {
+      it('should fail on trailing comma', async () => {
+        const parser = new PUCRio_v5_1_Parser('return 1,;');
+        await assert.rejects(parser.parse());
+      });
+
+      it('should succeed with a function call as the last expression', async () => {
+        const parser = new PUCRio_v5_1_Parser('return 1, print()');
+        const chunk = await parser.parse();
+
+        shouldContain(chunk, {
+          body: [
+            {
+              type: NodeType.Statement,
+              statementType: StatementType.ReturnStatement,
+              children: [
+                {
+                  type: NodeType.ExpressionList,
+                  children: [
+                    {
+                      type: NodeType.Expression,
+                      expressionType: ExpressionType.NumberExpression,
+                      raw: '1',
+                      children: [],
+                    },
+                    {
+                      type: NodeType.Expression,
+                      expressionType: ExpressionType.PrefixExpression,
+                      prefixExpressionType: PrefixExpressionType.FunctionCall,
+                      children: [
+                        {
+                          type: NodeType.Expression,
+                          expressionType: ExpressionType.PrefixExpression,
+                          prefixExpressionType: PrefixExpressionType.Variable,
+                          children: [
+                            {
+                              type: NodeType.Name,
+                              name: 'print',
+                            },
+                          ],
+                        },
+                        {
+                          type: NodeType.Arguments,
+                          argumentsType: ArgumentsType.ExpressionList,
+                          children: [
+                            {
+                              type: NodeType.ExpressionList,
+                              children: [],
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        });
       });
     });
   });
