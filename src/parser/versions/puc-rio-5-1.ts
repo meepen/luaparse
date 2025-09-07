@@ -231,7 +231,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
       case 'local':
         return this.parseLocalAmbiguousStatement();
       case 'for':
-        return this.parseForAmibiguousStatement();
+        return this.parseForAmbiguousStatement();
       case 'if':
         return this.parseIfStatement();
       case 'repeat':
@@ -333,7 +333,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return new IfStatement(exp, block, clauses, elseBlock);
   }
 
-  protected async parseForAmibiguousStatement(): Promise<ForStatement | ForInStatement> {
+  protected async parseForAmbiguousStatement(): Promise<ForStatement | ForInStatement> {
     this.expect('for');
     const nameList = this.parseNameList();
     if (!nameList) {

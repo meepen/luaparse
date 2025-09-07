@@ -222,6 +222,11 @@ describe('PUCRio_v5_1_Parser', () => {
           ],
         });
       });
+
+      it('should fail with missing expression', async () => {
+        const parser = new PUCRio_v5_1_Parser('while do end');
+        await assert.rejects(parser.parse(), 'Expected expression');
+      });
     });
 
     describe('break', () => {
@@ -338,6 +343,13 @@ describe('PUCRio_v5_1_Parser', () => {
             },
           ],
         });
+      });
+    });
+
+    describe('for ...?', () => {
+      it('should fail to parse when missing names', async () => {
+        const parser = new PUCRio_v5_1_Parser('for = 1, 10 do end');
+        await assert.rejects(parser.parse(), 'Expected name');
       });
     });
 
@@ -540,6 +552,11 @@ describe('PUCRio_v5_1_Parser', () => {
           ],
         });
       });
+
+      it('should fail when missing expression', async () => {
+        const parser = new PUCRio_v5_1_Parser('repeat return until');
+        await assert.rejects(parser.parse(), 'Expected expression');
+      });
     });
 
     describe('for name = start, end [, step] do ... end', () => {
@@ -680,6 +697,20 @@ describe('PUCRio_v5_1_Parser', () => {
       it('should fail with a namelist instead of a name', async () => {
         const parser = new PUCRio_v5_1_Parser('for i, j = 1, 10 do end');
         await assert.rejects(parser.parse(), 'Expected name');
+      });
+
+      it('should fail without start expression', async () => {
+        const parser = new PUCRio_v5_1_Parser('for i = , 10 do end');
+        await assert.rejects(parser.parse(), 'Expected expression');
+      });
+
+      it('should fail without end expression', async () => {
+        const parser = new PUCRio_v5_1_Parser('for i = 1, do end');
+        await assert.rejects(parser.parse(), 'Expected expression');
+      });
+      it('should fail without step expression', async () => {
+        const parser = new PUCRio_v5_1_Parser('for i = 1, 10, do end');
+        await assert.rejects(parser.parse(), 'Expected expression');
       });
     });
 
@@ -2501,6 +2532,45 @@ describe('PUCRio_v5_1_Parser', () => {
             ],
           });
         });
+        it('should parse parenthesized variables', async () => {
+          const parser = new PUCRio_v5_1_Parser('return (a)');
+          const chunk = await parser.parse();
+
+          shouldContain(chunk, {
+            body: [
+              {
+                type: NodeType.Statement,
+                statementType: StatementType.ReturnStatement,
+                children: [
+                  {
+                    type: NodeType.ExpressionList,
+                    children: [
+                      {
+                        type: NodeType.Expression,
+                        expressionType: ExpressionType.PrefixExpression,
+                        prefixExpressionType: PrefixExpressionType.ParenthesizedExpression,
+                        children: [
+                          {
+                            type: NodeType.Expression,
+                            expressionType: ExpressionType.PrefixExpression,
+                            prefixExpressionType: PrefixExpressionType.Variable,
+                            variablePrefixExpressionType: VariablePrefixExpressionType.Name,
+                            children: [
+                              {
+                                type: NodeType.Name,
+                                name: 'a',
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          });
+        });
       });
       it('should parse function calls', async () => {
         const parser = new PUCRio_v5_1_Parser('return a()');
@@ -2845,6 +2915,11 @@ describe('PUCRio_v5_1_Parser', () => {
             },
           ],
         });
+      });
+
+      it('should fail with missing operand', async () => {
+        const parser = new PUCRio_v5_1_Parser('return -');
+        await assert.rejects(parser.parse(), 'Expected expression');
       });
     });
 
