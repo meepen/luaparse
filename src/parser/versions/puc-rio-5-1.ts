@@ -967,6 +967,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
 
       fields.push(field);
       if (!this.consume(',') && !this.consume(';')) {
+        this.expect('}');
         break;
       }
     }

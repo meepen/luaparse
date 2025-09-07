@@ -2158,6 +2158,220 @@ describe('PUCRio_v5_1_Parser', () => {
           ],
         });
       });
+
+      it('should parse with argument', async () => {
+        const parser = new PUCRio_v5_1_Parser('test(1)');
+        const chunk = await parser.parse();
+
+        shouldContain(chunk, {
+          body: [
+            {
+              type: NodeType.Statement,
+              statementType: StatementType.FunctionCall,
+              children: [
+                {
+                  type: NodeType.Expression,
+                  expressionType: ExpressionType.PrefixExpression,
+                  prefixExpressionType: PrefixExpressionType.FunctionCall,
+                  functionCallPrefixExpressionType: FunctionCallPrefixExpressionType.Normal,
+                  children: [
+                    {
+                      type: NodeType.Expression,
+                      expressionType: ExpressionType.PrefixExpression,
+                      prefixExpressionType: PrefixExpressionType.Variable,
+                      variablePrefixExpressionType: VariablePrefixExpressionType.Name,
+                      children: [
+                        {
+                          type: NodeType.Name,
+                          name: 'test',
+                        },
+                      ],
+                    },
+                    {
+                      type: NodeType.Arguments,
+                      argumentsType: ArgumentsType.ExpressionList,
+                      children: [
+                        {
+                          type: NodeType.ExpressionList,
+                          children: [
+                            {
+                              type: NodeType.Expression,
+                              expressionType: ExpressionType.NumberExpression,
+                              value: 1,
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        });
+      });
+
+      it('should parse with multiple arguments', async () => {
+        const parser = new PUCRio_v5_1_Parser('test(1, 2)');
+        const chunk = await parser.parse();
+
+        shouldContain(chunk, {
+          body: [
+            {
+              type: NodeType.Statement,
+              statementType: StatementType.FunctionCall,
+              children: [
+                {
+                  type: NodeType.Expression,
+                  expressionType: ExpressionType.PrefixExpression,
+                  prefixExpressionType: PrefixExpressionType.FunctionCall,
+                  functionCallPrefixExpressionType: FunctionCallPrefixExpressionType.Normal,
+                  children: [
+                    {
+                      type: NodeType.Expression,
+                      expressionType: ExpressionType.PrefixExpression,
+                      prefixExpressionType: PrefixExpressionType.Variable,
+                      variablePrefixExpressionType: VariablePrefixExpressionType.Name,
+                      children: [
+                        {
+                          type: NodeType.Name,
+                          name: 'test',
+                        },
+                      ],
+                    },
+                    {
+                      type: NodeType.Arguments,
+                      argumentsType: ArgumentsType.ExpressionList,
+                      children: [
+                        {
+                          type: NodeType.ExpressionList,
+                          children: [
+                            {
+                              type: NodeType.Expression,
+                              expressionType: ExpressionType.NumberExpression,
+                              value: 1,
+                            },
+                            {
+                              type: NodeType.Expression,
+                              expressionType: ExpressionType.NumberExpression,
+                              value: 2,
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        });
+      });
+
+      it('should parse with test(t, {n=4,2,3})', async () => {
+        const parser = new PUCRio_v5_1_Parser('test(t, {n=4,2,3})');
+        const chunk = await parser.parse();
+
+        shouldContain(chunk, {
+          body: [
+            {
+              type: NodeType.Statement,
+              statementType: StatementType.FunctionCall,
+              children: [
+                {
+                  type: NodeType.Expression,
+                  expressionType: ExpressionType.PrefixExpression,
+                  prefixExpressionType: PrefixExpressionType.FunctionCall,
+                  functionCallPrefixExpressionType: FunctionCallPrefixExpressionType.Normal,
+                  children: [
+                    {
+                      type: NodeType.Expression,
+                      expressionType: ExpressionType.PrefixExpression,
+                      prefixExpressionType: PrefixExpressionType.Variable,
+                      variablePrefixExpressionType: VariablePrefixExpressionType.Name,
+                      children: [
+                        {
+                          type: NodeType.Name,
+                          name: 'test',
+                        },
+                      ],
+                    },
+                    {
+                      type: NodeType.Arguments,
+                      argumentsType: ArgumentsType.ExpressionList,
+                      children: [
+                        {
+                          type: NodeType.ExpressionList,
+                          children: [
+                            {
+                              type: NodeType.Expression,
+                              expressionType: ExpressionType.PrefixExpression,
+                              prefixExpressionType: PrefixExpressionType.Variable,
+                              variablePrefixExpressionType: VariablePrefixExpressionType.Name,
+                              children: [
+                                {
+                                  type: NodeType.Name,
+                                  name: 't',
+                                },
+                              ],
+                            },
+                            {
+                              type: NodeType.Expression,
+                              expressionType: ExpressionType.TableConstructorExpression,
+                              children: [
+                                {
+                                  type: NodeType.Field,
+                                  fieldType: FieldType.NameExpression,
+                                  children: [
+                                    {
+                                      type: NodeType.Name,
+                                      name: 'n',
+                                    },
+                                    {
+                                      type: NodeType.Expression,
+                                      expressionType: ExpressionType.NumberExpression,
+                                      raw: '4',
+                                      value: 4,
+                                    },
+                                  ],
+                                },
+                                {
+                                  type: NodeType.Field,
+                                  fieldType: FieldType.Expression,
+                                  children: [
+                                    {
+                                      type: NodeType.Expression,
+                                      expressionType: ExpressionType.NumberExpression,
+                                      raw: '2',
+                                      value: 2,
+                                    },
+                                  ],
+                                },
+                                {
+                                  type: NodeType.Field,
+                                  fieldType: FieldType.Expression,
+                                  children: [
+                                    {
+                                      type: NodeType.Expression,
+                                      expressionType: ExpressionType.NumberExpression,
+                                      raw: '3',
+                                      value: 3,
+                                    },
+                                  ],
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        });
+      });
     });
   });
 
@@ -3541,6 +3755,61 @@ describe('PUCRio_v5_1_Parser', () => {
           ],
         });
       });
+      it('should parse with a name key and a array key', async () => {
+        const parser = new PUCRio_v5_1_Parser('return {test = 2, 3}');
+        const chunk = await parser.parse();
+
+        shouldContain(chunk, {
+          body: [
+            {
+              type: NodeType.Statement,
+              statementType: StatementType.ReturnStatement,
+              children: [
+                {
+                  type: NodeType.ExpressionList,
+                  children: [
+                    {
+                      type: NodeType.Expression,
+                      expressionType: ExpressionType.TableConstructorExpression,
+                      children: [
+                        {
+                          type: NodeType.Field,
+                          fieldType: FieldType.NameExpression,
+                          children: [
+                            {
+                              type: NodeType.Name,
+                              name: 'test',
+                            },
+                            {
+                              type: NodeType.Expression,
+                              expressionType: ExpressionType.NumberExpression,
+                              raw: '2',
+                              children: [],
+                            },
+                          ],
+                        },
+                        {
+                          type: NodeType.Field,
+                          fieldType: FieldType.Expression,
+                          children: [
+                            {
+                              type: NodeType.Expression,
+                              expressionType: ExpressionType.NumberExpression,
+                              raw: '3',
+                              children: [],
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        });
+      });
+
       it('should fail on unterminated table', async () => {
         const parser = new PUCRio_v5_1_Parser('return {');
         await assert.rejects(parser.parse());
