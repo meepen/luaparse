@@ -8,21 +8,30 @@ await yargs(hideBin(process.argv))
     'test [files..]',
     'Test the parser with Lua files',
     (y) =>
-      y.positional('files', {
-        describe: 'Lua files to parse',
-        type: 'string',
-        array: true,
-        default: [],
-      }),
+      /** -t <number> */
+      y
+        .option('times', {
+          describe: 'Number of times to run the test',
+          alias: 't',
+          type: 'number',
+          default: 1,
+        })
+        .positional('files', {
+          describe: 'Lua files to parse',
+          type: 'string',
+          array: true,
+          default: [],
+        }),
     async (argv) => {
       console.log('Starting parser tests...');
-      const luaSource = await collectLuaFiles(argv.files.length !== 0 ? argv.files : undefined);
-
+      let luaSource = await collectLuaFiles(argv.files.length !== 0 ? argv.files : undefined);
       const luaVersion = LuaVersion.PUCRio_v5_1;
+
+      // repeat luaSource times
+      luaSource = Array<typeof luaSource>(argv.times).fill(luaSource).flat();
 
       const results: { result?: unknown; error?: Error; file: { name: string; content: string } }[] = [];
       for (const file of luaSource) {
-        console.log(`Parsing ${file.name}...`);
         try {
           results.push({
             result: await createParser(luaVersion, file.content).parse(),
@@ -33,12 +42,10 @@ await yargs(hideBin(process.argv))
         }
       }
 
-      for (const { error, file } of results) {
-        if (error) {
-          console.error(`Error parsing ${file.name}:`, error);
-        } else {
-          console.log(`Successfully parsed ${file.name}`);
-        }
+      console.log(`Parsed ${results.length} files.`);
+
+      for (const { error, file } of results.filter((r) => r.error)) {
+        console.error(`Error parsing ${file.name}:`, error);
       }
     },
   )
