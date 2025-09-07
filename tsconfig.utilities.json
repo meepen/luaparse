@@ -4,7 +4,7 @@
     "composite": true,
   },
   "include": [
-    "speedtest/src/**/*.ts"
+    "utilities/src/**/*.ts"
   ],
   "references": [
     { "path": "./tsconfig.app.json" }

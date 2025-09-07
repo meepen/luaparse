@@ -27,11 +27,13 @@
     "prebuild": "rimraf -g dist src/**/*.js src/**/*.js.map src/**/*.d.ts",
     "build": "tsc --build tsconfig.app.json",
     "bin": "npm run build && node --enable-source-maps dist/bin.js",
-    "pretest": "eslint .",
+    "lint": "eslint .",
     "test": "vitest run",
-  "test:coverage": "vitest run --coverage",
-  "coverage:badge": "node scripts/gen-coverage-badge.mjs",
-  "postcoverage": "npm run coverage:badge"
+    "test:resource": "cd utilities && npm run resource-test",
+    "test:coverage": "vitest run --coverage",
+    "coverage:badge": "node scripts/gen-coverage-badge.mjs",
+    "postcoverage": "npm run coverage:badge",
+    "speedtest": "cd utilities && npm run speedtest"
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",

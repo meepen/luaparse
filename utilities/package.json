@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "start": "tsx src/speed.ts"
+    "speedtest": "tsx src/speed.ts",
+    "resource-test": "tsx src/test.ts"
   },
   "devDependencies": {
     "@types/node": "^22",

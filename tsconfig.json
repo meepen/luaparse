@@ -22,6 +22,6 @@
     { "path": "./tsconfig.app.json" },
     { "path": "./tsconfig.test.json" },
     { "path": "./tsconfig.config.json" },
-    { "path": "./tsconfig.speedtest.json" }
+    { "path": "./tsconfig.utilities.json" }
   ]
 }

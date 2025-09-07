@@ -44,6 +44,10 @@ jobs:
         run: |
           nix develop -c bash -euxo pipefail -c 'npm ci'
 
+      - name: Lint
+        run: |
+          nix develop -c bash -euxo pipefail -c 'npm run lint'
+
       - name: Test
         run: |
           nix develop -c bash -euxo pipefail -c 'npm test'
