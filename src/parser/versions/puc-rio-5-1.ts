@@ -64,11 +64,13 @@ function createHashMap(...values: string[]): { [key: string]: true } {
   return map;
 }
 
-function createPrecedenceMap(...values: string[][]): { [key: string]: number } {
-  const map = Object.create(null) as { [key: string]: number };
+function createPrecedenceMap(...values: ([string, number] | string)[][]): { [key: string]: [number, number] } {
+  const map = Object.create(null) as { [key: string]: [number, number] };
   for (const [precedence, operators] of values.entries()) {
-    for (const operator of operators) {
-      map[operator] = precedence;
+    for (const op of operators) {
+      const operator = typeof op === 'string' ? ([op, 0] as [string, number]) : op;
+
+      map[operator[0]] = [precedence, precedence + operator[1]];
     }
   }
   return map;
@@ -150,7 +152,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     ['..'],
     ['+', '-'],
     ['*', '/', '%'],
-    ['^'],
+    [['^', -1]],
   );
 
   // Digits are handled seperately
@@ -534,23 +536,50 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
       binaryParts.push({ operator: binaryOperator.value, right });
     }
 
-    // build binary expression tree
+    // build binary expression tree honoring left/right precedence (associativity)
+    // precedence map stores [leftBindingPower, rightBindingPower]
     if (binaryParts.length > 0) {
       while (binaryParts.length !== 0) {
-        // find the highest precedence operator
-        const next = binaryParts
-          .map((part, index) => ({ ...part, index, precedence: this.binaryOperatorPrecedence[part.operator] }))
-          .reduceRight((a, b) => {
-            return a.precedence > b.precedence ? a : b;
-          });
+        // Determine which operator to reduce next.
+        // Strategy:
+        // 1. Find highest left binding power.
+        // 2. Among operators with same left binding power, if any are right-associative (left > right), pick the rightmost.
+        //    Otherwise (left <= right meaning left-associative) pick the leftmost.
+        let bestIndex = -1;
+        let bestLeft = -1;
+        let bestIsRightAssoc = false;
+        for (let i = 0; i < binaryParts.length; i++) {
+          const { operator } = binaryParts[i];
+          const [leftPrec, rightPrec] = this.binaryOperatorPrecedence[operator];
+          if (leftPrec > bestLeft) {
+            bestLeft = leftPrec;
+            bestIndex = i;
+            bestIsRightAssoc = leftPrec > rightPrec;
+            continue;
+          }
+          if (leftPrec === bestLeft) {
+            const isRightAssoc = leftPrec > rightPrec;
+            if (bestIsRightAssoc && isRightAssoc) {
+              // both right associative at same precedence -> pick the one further to the right
+              bestIndex = i;
+            } else if (!bestIsRightAssoc && !isRightAssoc) {
+              // both left associative -> keep the earlier (do nothing)
+            } else if (!bestIsRightAssoc && isRightAssoc) {
+              // prefer right-assoc over left-assoc at same precedence by moving to rightmost right-assoc
+              bestIndex = i;
+              bestIsRightAssoc = true;
+              throw this.parserError('untested code path');
+            }
+          }
+        }
+
+        const next = binaryParts[bestIndex];
         // remove it from the list
-        binaryParts.splice(next.index, 1);
-        // create the binary expression
-        const leftIndex = next.index - 1;
+        binaryParts.splice(bestIndex, 1);
+        // determine left side
+        const leftIndex = bestIndex - 1;
         const left = leftIndex === -1 ? expression : binaryParts[leftIndex].right;
-
         const newExpr: BinaryOperationExpression = new BinaryOperationExpression(left, next.operator, next.right);
-
         if (leftIndex === -1) {
           expression = newExpr;
         } else {
@@ -723,6 +752,9 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
   protected calculateNumber(value: Uint8Array, radix: number): number {
     const digits = this.generateDigits(radix);
     const startIndex = radix === 16 ? 2 : 0;
+    if (startIndex === value.length) {
+      throw this.parserError('malformed number');
+    }
     let retn = 0;
     let decimalIndex = value.length - startIndex;
     let exponentIndex = value.length - startIndex;

@@ -120,7 +120,7 @@ export class Tokenizer implements TokenizerState {
   }
 
   public get eof() {
-    return this.pos >= this.input.bytes.length;
+    return this.pos >= this.input.bytes.length && this._lookahead === undefined;
   }
 
   protected nextChar() {

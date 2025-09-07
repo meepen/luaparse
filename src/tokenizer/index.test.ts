@@ -132,6 +132,13 @@ describe('Tokenizer', () => {
       assertToken(tokenizer.next, '56e-2', 1, 2);
       assert(!tokenizer.next);
     });
+
+    it('should separate numbers with two dots', () => {
+      const tokenizer = new Tokenizer('1.2.3');
+      assertToken(tokenizer.next, '1.2', 1, 1);
+      assertToken(tokenizer.next, '.3', 1, 4);
+      assert(!tokenizer.next);
+    });
   });
 
   describe('strings', () => {

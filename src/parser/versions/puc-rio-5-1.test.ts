@@ -2486,6 +2486,11 @@ describe('PUCRio_v5_1_Parser', () => {
             ],
           });
         });
+
+        it('should fail parsing keyword member accessors', async () => {
+          const parser = new PUCRio_v5_1_Parser('return a.and');
+          await assert.rejects(parser.parse(), 'unexpected keyword');
+        });
         it('should parse indexed accessors', async () => {
           const parser = new PUCRio_v5_1_Parser('return a[1]');
           const chunk = await parser.parse();
@@ -2532,6 +2537,14 @@ describe('PUCRio_v5_1_Parser', () => {
             ],
           });
         });
+        it('should fail parsing indexed accessors without closing bracket', async () => {
+          const parser = new PUCRio_v5_1_Parser('return a[1');
+          await assert.rejects(parser.parse(), 'Expected "]"');
+        });
+        it('should fail parsing indexed accessors without expression', async () => {
+          const parser = new PUCRio_v5_1_Parser('return a[]');
+          await assert.rejects(parser.parse(), 'Expected expression');
+        });
         it('should parse parenthesized variables', async () => {
           const parser = new PUCRio_v5_1_Parser('return (a)');
           const chunk = await parser.parse();
@@ -2570,6 +2583,16 @@ describe('PUCRio_v5_1_Parser', () => {
               },
             ],
           });
+        });
+
+        it('should fail parsing parenthesized variables without closing parenthesis', async () => {
+          const parser = new PUCRio_v5_1_Parser('return (a');
+          await assert.rejects(parser.parse(), 'Expected ")"');
+        });
+
+        it('should fail parsing parenthesized variables without expression', async () => {
+          const parser = new PUCRio_v5_1_Parser('return ()');
+          await assert.rejects(parser.parse(), 'Expected expression');
         });
       });
       it('should parse function calls', async () => {
@@ -3004,6 +3027,64 @@ describe('PUCRio_v5_1_Parser', () => {
                           expressionType: ExpressionType.NumberExpression,
                           raw: '3',
                           children: [],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        });
+      });
+
+      it('should fail when missing expression', async () => {
+        const parser = new PUCRio_v5_1_Parser('return 1 + ');
+        await assert.rejects(parser.parse(), 'Expected expression');
+      });
+
+      it('should support right associativity of ^', async () => {
+        const parser = new PUCRio_v5_1_Parser('return 2 ^ 3 ^ 4');
+        const chunk = await parser.parse();
+
+        shouldContain(chunk, {
+          body: [
+            {
+              type: NodeType.Statement,
+              statementType: StatementType.ReturnStatement,
+              children: [
+                {
+                  type: NodeType.ExpressionList,
+                  children: [
+                    {
+                      type: NodeType.Expression,
+                      expressionType: ExpressionType.BinaryOperationExpression,
+                      operator: '^',
+                      children: [
+                        {
+                          type: NodeType.Expression,
+                          expressionType: ExpressionType.NumberExpression,
+                          raw: '2',
+                          children: [],
+                        },
+                        {
+                          type: NodeType.Expression,
+                          expressionType: ExpressionType.BinaryOperationExpression,
+                          operator: '^',
+                          children: [
+                            {
+                              type: NodeType.Expression,
+                              expressionType: ExpressionType.NumberExpression,
+                              raw: '3',
+                              children: [],
+                            },
+                            {
+                              type: NodeType.Expression,
+                              expressionType: ExpressionType.NumberExpression,
+                              raw: '4',
+                              children: [],
+                            },
+                          ],
                         },
                       ],
                     },
@@ -3615,6 +3696,26 @@ describe('PUCRio_v5_1_Parser', () => {
               },
             ],
           });
+        });
+
+        it('should fail to parse hexadecimal numbers with no body', async () => {
+          const parser = new PUCRio_v5_1_Parser('return 0x');
+          await assert.rejects(parser.parse(), 'malformed number');
+        });
+
+        it('should fail to parse hexadecimal numbers with invalid body', async () => {
+          const parser = new PUCRio_v5_1_Parser('return 0xG');
+          await assert.rejects(parser.parse(), 'malformed number');
+        });
+
+        it('should fail to parse decimal numbers with invalid body', async () => {
+          const parser = new PUCRio_v5_1_Parser('return 1.2.3');
+          await assert.rejects(parser.parse(), 'malformed number');
+        });
+
+        it('should fail to parse decimal numbers with invalid characters', async () => {
+          const parser = new PUCRio_v5_1_Parser('return 1.a');
+          await assert.rejects(parser.parse(), 'malformed number');
         });
       });
     });
