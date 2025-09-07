@@ -130,7 +130,7 @@ export class Tokenizer implements TokenizerState {
     if (this.isNewLine(chr)) {
       // CRLF check
       if (chr === CharCodes.CARRIAGE_RETURN && this.peekChar() === CharCodes.LINE_FEED) {
-        this.nextChar();
+        this.pos++;
       }
       this.lineNumber++;
       this.columnNumber = 1;
