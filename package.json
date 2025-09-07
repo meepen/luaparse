@@ -29,7 +29,7 @@
     "bin": "npm run build && node --enable-source-maps dist/bin.js",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:resource": "tsx utilities/test.ts",
+    "test:resource": "tsx utilities/test.ts test",
     "test:coverage": "vitest run --coverage",
     "coverage:badge": "node scripts/gen-coverage-badge.mjs",
     "postcoverage": "npm run coverage:badge",
@@ -39,6 +39,7 @@
     "@eslint/js": "^9.35.0",
     "@types/luaparse": "^0.2.12",
     "@types/node": "^22",
+    "@types/yargs": "^17.0.33",
     "@vitest/coverage-v8": "^3.2.4",
     "eslint": "^9.35.0",
     "eslint-config-prettier": "^10.1.8",
@@ -51,7 +52,8 @@
     "tsx": "^4.20.5",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.42.0",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "yargs": "^18.0.0"
   },
   "author": {
     "email": "meep@meepen.dev",
