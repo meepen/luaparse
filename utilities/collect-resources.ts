@@ -3,7 +3,7 @@ import { join, resolve } from 'node:path';
 
 export async function collectLuaFiles() {
   // read ./lua directory and return all .lua files as an array of strings
-  const baseDir = resolve(join(import.meta.dirname, '../../resources/lua'));
+  const baseDir = resolve(join(import.meta.dirname, '../resources/lua'));
 
   const files = await readdir(baseDir);
   return await Promise.all(

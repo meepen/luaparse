@@ -4,7 +4,7 @@
     "composite": true,
   },
   "include": [
-    "utilities/src/**/*.ts"
+    "utilities/**/*.ts"
   ],
   "references": [
     { "path": "./tsconfig.app.json" }

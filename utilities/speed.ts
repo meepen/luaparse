@@ -1,5 +1,5 @@
 import { Bench } from 'tinybench';
-import { createParser, LuaVersion } from '../../src/index.js';
+import { createParser, LuaVersion } from '../src/index.js';
 import luaparse from 'luaparse';
 import { collectLuaFiles } from './collect-resources.js';
 
