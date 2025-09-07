@@ -224,6 +224,39 @@ describe('PUCRio_v5_1_Parser', () => {
       });
     });
 
+    describe('break', () => {
+      it('should handle break', async () => {
+        const parser = new PUCRio_v5_1_Parser('while true do break end');
+        const chunk = await parser.parse();
+
+        shouldContain(chunk, {
+          body: [
+            {
+              type: NodeType.Statement,
+              statementType: StatementType.WhileBlockEnd,
+              children: [
+                {
+                  type: NodeType.Expression,
+                  expressionType: ExpressionType.TrueExpression,
+                  children: [],
+                },
+                {
+                  type: NodeType.Chunk,
+                  children: [
+                    {
+                      type: NodeType.Statement,
+                      statementType: StatementType.BreakStatement,
+                      children: [],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        });
+      });
+    });
+
     describe('return', () => {
       it('should parse return with no values', async () => {
         const parser = new PUCRio_v5_1_Parser('return');

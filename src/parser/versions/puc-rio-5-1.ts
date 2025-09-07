@@ -220,6 +220,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
       case 'return':
         return this.parseReturnStatement();
       case 'break':
+        this.getNext();
         return new BreakStatement();
       case 'do':
         return this.parseDoStatement();
