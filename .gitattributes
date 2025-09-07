@@ -1,6 +1,5 @@
 # Ignore resource files
-/resources/* linguist-vendored
+/resources/** linguist-vendored
 
 # Ignore package-lock.json
 package-lock.json linguist-generated
-/speedtest/package-lock.json linguist-generated
