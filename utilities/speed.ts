@@ -9,19 +9,15 @@ const bench = new Bench({
 
 const luaSource = await collectLuaFiles();
 
-bench.add('luaparse', () => {
-  for (const file of luaSource) {
-    console.log(`luaparse: Parsing ${file.name}`);
+for (const file of luaSource) {
+  bench.add(`luaparse: ${file.name}`, () => {
     luaparse.parse(file.content, { luaVersion: '5.1', comments: false, scope: false, locations: false, ranges: false });
-  }
-});
+  });
 
-bench.add('@meepen/luaparse', async () => {
-  for (const file of luaSource) {
-    console.log(`@meepen/luaparse: Parsing ${file.name}`);
+  bench.add(`@meepen/luaparse: ${file.name}`, async () => {
     await createParser(LuaVersion.PUCRio_v5_1, file.content).parse();
-  }
-});
+  });
+}
 
 await bench.run();
 
