@@ -1,3 +1,4 @@
+import { createDictionary } from '../../helpers/create-dictionary.js';
 import { ExpressionType } from '../../nodes/exp.js';
 import { PrefixExpressionType } from '../../nodes/exp/prefix-expression.js';
 import { VariablePrefixExpressionType } from '../../nodes/exp/prefixexp/variable.js';
@@ -53,27 +54,22 @@ import { AssignmentStatement } from '../../nodes/stat/assignment.js';
 import { FunctionCallStatement } from '../../nodes/stat/function-call.js';
 import { VariableList } from '../../nodes/varlist.js';
 import { CharCodes } from '../../tokenizer/char-codes.js';
-import { TokenType, Tokenizer, isValidHexChar } from '../../tokenizer/index.js';
+import { TokenType, Tokenizer } from '../../tokenizer/index.js';
 import { AstParser, LuaVersion } from '../index.js';
 
-function createHashMap(...values: string[]): { [key: string]: true } {
-  const map = Object.create(null) as { [key: string]: true };
-  for (const value of values) {
-    map[value] = true;
-  }
-  return map;
+function createHashMap(...values: string[]) {
+  return createDictionary(values.map((v) => [v, true] as const));
 }
 
-function createPrecedenceMap(...values: ([string, number] | string)[][]): { [key: string]: [number, number] } {
-  const map = Object.create(null) as { [key: string]: [number, number] };
-  for (const [precedence, operators] of values.entries()) {
-    for (const op of operators) {
-      const operator = typeof op === 'string' ? ([op, 0] as [string, number]) : op;
-
-      map[operator[0]] = [precedence, precedence + operator[1]];
-    }
-  }
-  return map;
+function createPrecedenceMap(...values: ([string, number] | string)[][]) {
+  return createDictionary(
+    values.flatMap((operators, precedence) =>
+      operators.map((op) => {
+        const operator = typeof op === 'string' ? ([op, 0] as [string, number]) : op;
+        return [operator[0], [precedence, precedence + operator[1]]] as [string, [number, number]];
+      }),
+    ),
+  );
 }
 
 function createStringEscapeMap(...values: [number, number[]][]): (number[] | null)[] {
@@ -212,34 +208,32 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return new Chunk(statements);
   }
 
+  protected readonly statementLookup = createDictionary<string, () => Promise<Statement> | Statement>([
+    ['return', () => this.parseReturnStatement()],
+    [
+      'break',
+      () => {
+        this.getNext();
+        return new BreakStatement();
+      },
+    ],
+    ['do', () => this.parseDoStatement()],
+    ['while', () => this.parseWhileStatement()],
+    ['function', () => this.parseFunctionStatement()],
+    ['local', () => this.parseLocalAmbiguousStatement()],
+    ['for', () => this.parseForAmbiguousStatement()],
+    ['if', () => this.parseIfStatement()],
+    ['repeat', () => this.parseRepeatStatement()],
+  ] as const);
+
   protected async parseStatement(): Promise<Statement | null> {
     const token = this.lookahead;
     if (!token) {
       return null;
     }
-    switch (token.value) {
-      // Simple cases where there are no ambiguities
-      case 'return':
-        return this.parseReturnStatement();
-      case 'break':
-        this.getNext();
-        return new BreakStatement();
-      case 'do':
-        return this.parseDoStatement();
-      case 'while':
-        return this.parseWhileStatement();
-      case 'function':
-        return this.parseFunctionStatement();
-      case 'local':
-        return this.parseLocalAmbiguousStatement();
-      case 'for':
-        return this.parseForAmbiguousStatement();
-      case 'if':
-        return this.parseIfStatement();
-      case 'repeat':
-        return this.parseRepeatStatement();
-      default:
-        break;
+    const statementParser = this.statementLookup[token.value];
+    if (statementParser) {
+      return statementParser();
     }
 
     // Either varlist = explist OR functioncall
@@ -550,7 +544,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
         let bestIsRightAssoc = false;
         for (let i = 0; i < binaryParts.length; i++) {
           const { operator } = binaryParts[i];
-          const [leftPrec, rightPrec] = this.binaryOperatorPrecedence[operator];
+          const [leftPrec, rightPrec] = this.binaryOperatorPrecedence[operator]!;
           if (leftPrec > bestLeft) {
             bestLeft = leftPrec;
             bestIndex = i;
@@ -885,7 +879,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
               // hex
               const hex0 = bytes[i + 2];
               const hex1 = bytes[i + 3];
-              if (!isValidHexChar(hex0) || !isValidHexChar(hex1)) {
+              if (!Tokenizer.isValidHexChar(hex0) || !Tokenizer.isValidHexChar(hex1)) {
                 throw this.parserError('invalid escape sequence');
               }
 
