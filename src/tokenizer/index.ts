@@ -81,6 +81,7 @@ export class Tokenizer implements TokenizerState {
 
   protected computeNextToken() {
     this.lookahead = null;
+    this.eof = true;
     let tokenType = TokenType.Simple;
     const start = {
       pos: this.pos,
@@ -174,6 +175,7 @@ export class Tokenizer implements TokenizerState {
       }
     } while (this.skipComments && tokenType === TokenType.Comment);
 
+    this.eof = false;
     this.lookahead = new Token(this.input, start.pos, this.pos, start.lineNumber, start.columnNumber, tokenType);
   }
 
@@ -231,9 +233,7 @@ export class Tokenizer implements TokenizerState {
     return Tokenizer.isIdentifierStart(char) || (char >= CharCodes.DIGIT_0 && char <= CharCodes.DIGIT_9);
   }
 
-  public get eof() {
-    return this.pos >= this.input.bytes.length && this.lookahead === null;
-  }
+  public eof = false;
 
   /**
    * Advance the tokenizer by characters
@@ -265,7 +265,7 @@ export class Tokenizer implements TokenizerState {
   }
 
   protected processSimpleString(quoteChar: number) {
-    while (!this.eof) {
+    while (this.pos < this.input.bytes.length) {
       const nextChar = this.nextChar();
       if (nextChar === quoteChar) {
         return;
@@ -295,11 +295,11 @@ export class Tokenizer implements TokenizerState {
     // consume last '['
     this.nextChar();
 
-    while (!this.eof) {
+    while (this.pos < this.input.bytes.length) {
       if (this.nextChar() === CharCodes.RIGHT_SQUARE_BRACKET) {
         // Check for matching number of equals signs
         let endEqualsCount = 0;
-        for (endEqualsCount = 0; endEqualsCount < equalsCount && !this.eof; endEqualsCount++) {
+        for (endEqualsCount = 0; endEqualsCount < equalsCount && this.pos < this.input.bytes.length; endEqualsCount++) {
           if (this.peekChar() !== CharCodes.EQUALS_SIGN) {
             break;
           }
