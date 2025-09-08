@@ -384,7 +384,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     if (!token) {
       throw this.parserError("expected name or 'function'");
     }
-    if (token.value === 'function') {
+    if (token.is('function')) {
       return this.parseLocalFunctionStatement();
     } else {
       return this.parseLocalStatement();
@@ -515,7 +515,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
       }
     }
 
-    if (!expression && this.lookahead?.value === '(') {
+    if (!expression && this.lookahead?.is('(')) {
       expression = this.parsePrefixExpression();
     }
 
@@ -657,7 +657,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     if (this.lookahead?.type === TokenType.String) {
       return new StringArguments(this.parseStringExpression());
     }
-    if (this.lookahead?.value === '{') {
+    if (this.lookahead?.is('{') === true) {
       return new TableConstructorArguments(this.parseTableConstructorExpression());
     }
     this.expect('(');
@@ -696,7 +696,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
   }
 
   protected isParameter() {
-    return this.isIdentifier() || this.lookahead?.value === '...';
+    return this.isIdentifier() || this.lookahead?.is('...') === true;
   }
 
   protected parseParameterList(): ParameterList {
@@ -1004,7 +1004,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
   protected parseTableConstructorExpression(): TableConstructorExpression {
     this.expect('{');
     const fields: Field[] = [];
-    while (this.lookahead?.value !== '}') {
+    while (this.lookahead?.is('}') !== true) {
       if (this.eof) {
         throw this.parserError("expected '}'");
       }

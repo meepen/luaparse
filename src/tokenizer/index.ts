@@ -383,7 +383,7 @@ export class Tokenizer implements TokenizerState {
     if (!next) {
       throw new Error(`expected '${expected}' near <eof>`);
     }
-    if (next.value !== expected) {
+    if (!next.is(expected)) {
       throw new Error(`expected '${expected}' near '${next.value}' at ${next.lineNumber}:${next.columnNumber}`);
     }
   }
