@@ -35,8 +35,6 @@
     "test:resource:bench": "node --cpu-prof --cpu-prof-dir=coverage/speed --enable-source-maps ./dist/utilities/test.js test --times 100",
     "posttest:resource:bench": "tsx utilities/remap-all-profiles.ts",
     "test:coverage": "vitest run --coverage",
-    "coverage:badge": "node scripts/gen-coverage-badge.mjs",
-    "postcoverage": "npm run coverage:badge",
     "speedtest": "tsx utilities/speed.ts"
   },
   "devDependencies": {

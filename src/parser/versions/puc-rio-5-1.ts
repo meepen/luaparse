@@ -456,7 +456,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     let expression: Expression | null = null;
     // unary
     if (PUCRio_v5_1_Parser.unaryOperators[this.lookahead.value]) {
-      const unaryOperator = this.next!;
+      const unaryOperator = this.getNext()!;
       const right = await this.parseExpression();
       if (!right) {
         throw this.parserError('expected expression');
@@ -522,7 +522,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     // binary
     const binaryParts: { operator: string; right: Expression }[] = [];
     while (withBinaryExpressions && this.binaryOperators[this.lookahead?.value]) {
-      const binaryOperator = this.next!;
+      const binaryOperator = this.getNext()!;
       const right = await this.parseExpression(false);
       if (!right) {
         throw this.parserError('expected expression');
@@ -668,7 +668,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     if (this.lookahead?.type !== TokenType.Identifier) {
       throw this.parserError('expected name');
     }
-    const next = this.next!;
+    const next = this.getNext()!;
 
     if (this.keywords[next.value]) {
       throw this.parserError(`unexpected keyword '${next.value}'`);
@@ -837,7 +837,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
   }
 
   protected parseNumberExpression(): Expression {
-    const raw = this.next;
+    const raw = this.getNext();
     if (!raw) {
       throw this.parserError('expected number');
     }
@@ -862,7 +862,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
   }
 
   protected parseStringExpression(): StringExpression {
-    const raw = this.next;
+    const raw = this.getNext();
     if (!raw || raw.type !== TokenType.String) {
       throw this.parserError('expected string');
     }

@@ -61,6 +61,118 @@ export class Tokenizer implements TokenizerState {
       value,
       bytes: this.textEncoder.encode(value),
     };
+    this.computeNextToken();
+  }
+
+  public lookahead: Token | null = null;
+
+  protected computeNextToken() {
+    this.lookahead = null;
+    let tokenType = TokenType.Simple;
+    const start = {
+      pos: this.pos,
+      lineNumber: this.lineNumber,
+      columnNumber: this.columnNumber,
+      token: null,
+    };
+
+    do {
+      tokenType = TokenType.Simple;
+      while (this.pos < this.input.bytes.length) {
+        if (!Tokenizer.isWhitespace(this.peekChar())) {
+          break;
+        }
+        this.nextChar();
+      }
+
+      // Check EOF
+      if (this.pos >= this.input.bytes.length) {
+        return;
+      }
+
+      // We have a token next, determine what it is
+      // Capture the state of the tokenizer
+      start.pos = this.pos;
+      start.lineNumber = this.lineNumber;
+      start.columnNumber = this.columnNumber;
+
+      const nextChar = this.nextChar();
+
+      // This should ONLY increase the nextCharPos by the end of the switch statement
+      switch (nextChar) {
+        // >= <= == ~= > < =
+        case CharCodes.EQUALS_SIGN:
+        case CharCodes.LESS_THAN_SIGN:
+        case CharCodes.GREATER_THAN_SIGN:
+        case CharCodes.TILDE:
+          // check for additional =
+          if (this.peekChar() === CharCodes.EQUALS_SIGN) {
+            this.nextChar();
+          }
+          break;
+        // . .. ...
+        case CharCodes.FULL_STOP:
+          // check for additional .
+          if (this.peekChar() === CharCodes.FULL_STOP) {
+            this.nextChar();
+            // check for additional .
+            if (this.peekChar() === CharCodes.FULL_STOP) {
+              this.nextChar();
+            }
+            // check for numbers
+          } else if (Tokenizer.isValidDecimalChar(this.peekChar())) {
+            this.processNumber(nextChar);
+            tokenType = TokenType.Number;
+          }
+          break;
+
+        // comments -- --longstring
+        case CharCodes.HYPHEN_MINUS:
+          // check for additional -
+          if (this.peekChar() === CharCodes.HYPHEN_MINUS) {
+            this.nextChar();
+            tokenType = TokenType.Comment;
+            // check for long string
+            if (this.peekChar() !== CharCodes.LEFT_SQUARE_BRACKET || !this.processLongString(1)) {
+              // skip until newline for single line comments
+              while (!this.eof && !Tokenizer.isNewLine(this.peekChar())) {
+                this.nextChar();
+              }
+            }
+          }
+          break;
+
+        // default for 1 char tokens
+        default:
+          // Check for shebang
+          if (start.pos === 0 && start.lineNumber === 1 && nextChar === CharCodes.NUMBER_SIGN) {
+            // Shebang line, skip to end of line
+            while (!this.eof && !Tokenizer.isNewLine(this.peekChar())) {
+              this.nextChar();
+            }
+            tokenType = TokenType.Comment;
+          }
+          // check if it's part of an identifier or keyword
+          else if (Tokenizer.isIdentifierStart(nextChar)) {
+            tokenType = TokenType.Identifier;
+            while (Tokenizer.isIdentifierPart(this.peekChar())) {
+              this.nextChar();
+            }
+          } else if (nextChar >= CharCodes.DIGIT_0 && nextChar <= CharCodes.DIGIT_9) {
+            this.processNumber(nextChar);
+            tokenType = TokenType.Number;
+          } else if (nextChar == CharCodes.QUOTATION_MARK || nextChar == CharCodes.APOSTROPHE) {
+            this.processSimpleString(nextChar);
+            tokenType = TokenType.String;
+          } else if (nextChar == CharCodes.LEFT_SQUARE_BRACKET && this.processLongString()) {
+            tokenType = TokenType.String;
+          }
+
+          break;
+      }
+    } while (this.skipComments && tokenType === TokenType.Comment);
+
+    this.lookahead = new Token(this.input, start.pos, this.pos, start.lineNumber, start.columnNumber, tokenType);
   }
 
   protected readonly textEncoder = textEncoder;
@@ -72,8 +184,6 @@ export class Tokenizer implements TokenizerState {
   public pos = 0;
   public lineNumber = 1;
   public columnNumber = 1;
-
-  protected _lookahead?: Token;
 
   protected static isValidHexChar(this: void, char: number) {
     return (
@@ -120,7 +230,7 @@ export class Tokenizer implements TokenizerState {
   }
 
   public get eof() {
-    return this.pos >= this.input.bytes.length && this._lookahead === undefined;
+    return this.pos >= this.input.bytes.length && this.lookahead === null;
   }
 
   protected nextChar() {
@@ -246,137 +356,16 @@ export class Tokenizer implements TokenizerState {
     }
   }
 
-  public get lookahead(): Token | undefined {
-    const lk = this._lookahead;
-    if (lk !== undefined) {
-      return lk;
-    }
-    while (this.pos < this.input.bytes.length) {
-      if (!Tokenizer.isWhitespace(this.peekChar())) {
-        break;
-      }
-      this.nextChar();
-    }
-
-    // Check EOF
-    if (this.pos >= this.input.bytes.length) {
-      return undefined;
-    }
-
-    // We have a token next, determine what it is
-    // Capture the state of the tokenizer
-    const start = {
-      pos: this.pos,
-      lineNumber: this.lineNumber,
-      columnNumber: this.columnNumber,
-      token: null,
-    };
-
-    const nextChar = this.nextChar();
-    let tokenType = TokenType.Simple;
-
-    // This should ONLY increase the nextCharPos by the end of the switch statement
-    switch (nextChar) {
-      // >= <= == ~= > < =
-      case CharCodes.EQUALS_SIGN:
-      case CharCodes.LESS_THAN_SIGN:
-      case CharCodes.GREATER_THAN_SIGN:
-      case CharCodes.TILDE:
-        // check for additional =
-        if (this.peekChar() === CharCodes.EQUALS_SIGN) {
-          this.nextChar();
-        }
-        break;
-      // . .. ...
-      case CharCodes.FULL_STOP:
-        // check for additional .
-        if (this.peekChar() === CharCodes.FULL_STOP) {
-          this.nextChar();
-          // check for additional .
-          if (this.peekChar() === CharCodes.FULL_STOP) {
-            this.nextChar();
-          }
-          // check for numbers
-        } else if (Tokenizer.isValidDecimalChar(this.peekChar())) {
-          this.processNumber(nextChar);
-          tokenType = TokenType.Number;
-        }
-        break;
-
-      // comments -- --longstring
-      case CharCodes.HYPHEN_MINUS:
-        // check for additional -
-        if (this.peekChar() === CharCodes.HYPHEN_MINUS) {
-          this.nextChar();
-          tokenType = TokenType.Comment;
-          // check for long string
-          if (this.peekChar() !== CharCodes.LEFT_SQUARE_BRACKET || !this.processLongString(1)) {
-            // skip until newline for single line comments
-            while (!this.eof && !Tokenizer.isNewLine(this.peekChar())) {
-              this.nextChar();
-            }
-          }
-        }
-        break;
-
-      // default for 1 char tokens
-      default:
-        // Check for shebang
-        if (start.pos === 0 && start.lineNumber === 1 && nextChar === CharCodes.NUMBER_SIGN) {
-          // Shebang line, skip to end of line
-          while (!this.eof && !Tokenizer.isNewLine(this.peekChar())) {
-            this.nextChar();
-          }
-          tokenType = TokenType.Comment;
-        }
-        // check if it's part of an identifier or keyword
-        else if (Tokenizer.isIdentifierStart(nextChar)) {
-          tokenType = TokenType.Identifier;
-          while (Tokenizer.isIdentifierPart(this.peekChar())) {
-            this.nextChar();
-          }
-        } else if (nextChar >= CharCodes.DIGIT_0 && nextChar <= CharCodes.DIGIT_9) {
-          this.processNumber(nextChar);
-          tokenType = TokenType.Number;
-        } else if (nextChar == CharCodes.QUOTATION_MARK || nextChar == CharCodes.APOSTROPHE) {
-          this.processSimpleString(nextChar);
-          tokenType = TokenType.String;
-        } else if (nextChar == CharCodes.LEFT_SQUARE_BRACKET && this.processLongString()) {
-          tokenType = TokenType.String;
-        }
-
-        break;
-    }
-
-    if (this.skipComments && tokenType === TokenType.Comment) {
-      // Skip the comment
-      return this.lookahead;
-    }
-
-    return (this._lookahead = new Token(
-      this.input,
-      start.pos,
-      this.pos,
-      start.lineNumber,
-      start.columnNumber,
-      tokenType,
-    ));
-  }
-
-  protected getNext() {
+  public getNext() {
     const next = this.lookahead;
     if (!next) {
       return null;
     }
 
     this.pos = next.end;
-    delete this._lookahead;
+    this.computeNextToken();
 
     return next;
-  }
-
-  public get next(): Token | null {
-    return this.getNext();
   }
 
   public skip() {
@@ -390,13 +379,13 @@ export class Tokenizer implements TokenizerState {
    */
   public consume(expected: string): Token | null {
     if (this.lookahead?.value === expected) {
-      return this.next;
+      return this.getNext();
     }
     return null;
   }
 
   public expect(expected: string) {
-    const next = this.next;
+    const next = this.getNext();
     if (!next) {
       throw new Error(`expected '${expected}' near <eof>`);
     }
