@@ -9,13 +9,10 @@ export default defineConfig(
     ignores: ['**/*.js', '**/*.js.map', '**/*.d.ts'],
   },
   eslint.configs.recommended,
-  tseslint.configs.recommendedTypeChecked,
+  ...tseslint.configs.recommendedTypeChecked,
+  prettierConfig,
   {
-    rules: {
-      curly: ['error', 'all'],
-    },
-  },
-  {
+    files: ['**/*.ts'],
     languageOptions: {
       parserOptions: {
         projectService: true,
@@ -31,6 +28,7 @@ export default defineConfig(
           allowString: false,
         },
       ],
+      curly: ['error', 'all'],
     },
   },
   {
@@ -38,10 +36,7 @@ export default defineConfig(
       prettier: eslintPluginPrettier,
     },
     rules: {
-      // This will automatically use your .prettierrc
       'prettier/prettier': 'error',
     },
   },
-  // This disables rules that would conflict with Prettier
-  prettierConfig,
 );

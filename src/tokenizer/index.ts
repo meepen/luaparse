@@ -25,12 +25,12 @@ const textDecoder = new TextDecoder();
 
 export class Token implements StringBytes {
   constructor(
-    private input: StringBytes,
-    public start: number,
-    public end: number,
-    public lineNumber: number,
-    public columnNumber: number,
-    public type: TokenType,
+    private readonly input: StringBytes,
+    public readonly start: number,
+    public readonly end: number,
+    public readonly lineNumber: number,
+    public readonly columnNumber: number,
+    public readonly type: TokenType,
   ) {}
 
   private _bytes?: Uint8Array;

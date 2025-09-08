@@ -44,14 +44,22 @@ async function findMapForJs(jsPath: string, jsUrlMaybe?: string): Promise<RawSou
 }
 
 async function loadConsumer(mapRef: RawSourceMap | null): Promise<SourceMapConsumer | null> {
-  if (!mapRef) return null;
+  if (!mapRef) {
+    return null;
+  }
   return await new SourceMapConsumer(mapRef);
 }
 
 function normalizeUrl(u: string | undefined): string | null {
-  if (typeof u !== 'string' || u.length === 0) return null;
-  if (u.startsWith('file://')) return fileURLToPath(u);
-  if (isAbsolute(u)) return u;
+  if (typeof u !== 'string' || u.length === 0) {
+    return null;
+  }
+  if (u.startsWith('file://')) {
+    return fileURLToPath(u);
+  }
+  if (isAbsolute(u)) {
+    return u;
+  }
   return resolve(u);
 }
 
@@ -73,7 +81,9 @@ interface CPUProfileNode {
 export async function remapProfile(inPath: string, outPath: string): Promise<void> {
   const rawText = await readFile(inPath, 'utf8');
   const raw = JSON.parse(rawText) as { nodes?: unknown; profile?: { nodes?: unknown } };
-  if (raw === null) return; // nothing to do
+  if (raw === null) {
+    return;
+  } // nothing to do
   type RawProfile = { nodes?: unknown; profile?: { nodes?: unknown } };
   const r = raw as RawProfile;
   const nodes: CPUProfileNode[] = Array.isArray(r.nodes)
@@ -112,7 +122,9 @@ export async function remapProfile(inPath: string, outPath: string): Promise<voi
       }
     }
     const consumer = consumerCache.get(jsPath);
-    if (!consumer) continue;
+    if (!consumer) {
+      continue;
+    }
 
     const pos = consumer.originalPositionFor({
       line: Number(lineNumber) + 1,
