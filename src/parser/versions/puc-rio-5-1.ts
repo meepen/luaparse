@@ -1,3 +1,4 @@
+import { TextDecoder } from 'node:util';
 import { createDictionary } from '../../helpers/create-dictionary.js';
 import { ExpressionType } from '../../nodes/exp.js';
 import { PrefixExpressionType } from '../../nodes/exp/prefix-expression.js';
@@ -54,7 +55,7 @@ import { AssignmentStatement } from '../../nodes/stat/assignment.js';
 import { FunctionCallStatement } from '../../nodes/stat/function-call.js';
 import { VariableList } from '../../nodes/varlist.js';
 import { CharCodes } from '../../tokenizer/char-codes.js';
-import { TokenType, Tokenizer } from '../../tokenizer/index.js';
+import { Token, TokenType, Tokenizer } from '../../tokenizer/index.js';
 import { AstParser, LuaVersion } from '../index.js';
 
 function createHashMap(...values: string[]) {
@@ -85,7 +86,7 @@ export class LuaParserError extends Error {
     super(`${message} near ${LuaParserError.lookAheadText(tokenizer)}`);
   }
 
-  static lookAheadText(tokenizer: Tokenizer) {
+  private static lookAheadText(tokenizer: Tokenizer) {
     const token = tokenizer.lookahead;
     if (token) {
       return `'${token.value}' at ${token.lineNumber}:${token.columnNumber}`;
@@ -93,6 +94,8 @@ export class LuaParserError extends Error {
     return 'EOF';
   }
 }
+
+const textDecoder = new TextDecoder('utf8');
 
 export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
   constructor(public source: string) {
@@ -599,46 +602,51 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
       return null;
     }
 
-    for (
-      let lookahead = this.lookahead?.value;
-      this.consume('[') ||
-      this.consume('.') ||
-      this.consume(':') ||
-      lookahead === '(' ||
-      lookahead === '{' ||
-      this.lookahead?.type === TokenType.String;
-      lookahead = this.lookahead?.value
+    while (
+      this.lookahead &&
+      (this.lookahead.is('[') ||
+        this.lookahead.is('.') ||
+        this.lookahead.is(':') ||
+        this.lookahead.is('(') ||
+        this.lookahead.is('{') ||
+        this.lookahead.type === TokenType.String)
     ) {
-      switch (lookahead) {
-        case '[': {
-          const index = this.parseExpression();
-          if (!index) {
-            throw this.parserError('expected expression');
-          }
-          this.expect(']');
-          expression = new IndexedVariable(expression, index);
-          break;
-        }
-
-        case '.':
-          expression = new MemberVariable(expression, this.parseName());
-          break;
-
-        case ':':
-          expression = new MethodFunctionCall(expression, this.parseName(), this.parseArguments());
-          break;
-
-        case '(':
-        case '{':
-          expression = new NormalFunctionCall(expression, this.parseArguments());
-          break;
-
-        default:
-          if (this.lookahead?.type === TokenType.String) {
-            expression = new NormalFunctionCall(expression, this.parseArguments());
+      if (this.lookahead.length === 1) {
+        switch (this.lookahead.charCodeAt(0)) {
+          case CharCodes.LEFT_SQUARE_BRACKET: {
+            this.getNext();
+            const index = this.parseExpression();
+            if (!index) {
+              throw this.parserError('expected expression');
+            }
+            this.expect(']');
+            expression = new IndexedVariable(expression, index);
             break;
           }
-          throw this.parserError("expected '[', '.', '(' or ':'");
+
+          case CharCodes.FULL_STOP:
+            this.getNext();
+            expression = new MemberVariable(expression, this.parseName());
+            break;
+
+          case CharCodes.COLON:
+            this.getNext();
+            expression = new MethodFunctionCall(expression, this.parseName(), this.parseArguments());
+            break;
+
+          case CharCodes.LEFT_PARENTHESIS:
+          case CharCodes.LEFT_CURLY_BRACKET:
+            expression = new NormalFunctionCall(expression, this.parseArguments());
+            break;
+
+          default:
+            throw this.parserError("expected '[', '.', '(' or ':'");
+            break;
+        }
+      } else if (this.lookahead?.type === TokenType.String) {
+        expression = new NormalFunctionCall(expression, this.parseArguments());
+      } else {
+        throw this.parserError("expected '[', '.', '(' or ':' or <expression>");
       }
     }
 
@@ -742,7 +750,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return digits;
   }
 
-  protected calculateNumber(value: Uint8Array, radix: number): number {
+  protected calculateNumber(value: Token, radix: number): number {
     const digits = this.generateDigits(radix);
     const startIndex = radix === 16 ? 2 : 0;
     if (startIndex === value.length) {
@@ -753,7 +761,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     let exponentIndex = value.length - startIndex;
     // find decimal point
     for (let i = 0; i < value.length - startIndex; i++) {
-      const raw = value[i + startIndex];
+      const raw = value.charCodeAt(i + startIndex);
       if (raw === CharCodes.FULL_STOP) {
         decimalIndex = i;
       } else if (
@@ -770,7 +778,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     let exponent = 0;
     // calculate integer part
     for (let i = decimalIndex - 1; i >= 0; i--) {
-      const raw = value[i + startIndex];
+      const raw = value.charCodeAt(i + startIndex);
       const digit = digits[raw];
       if (digit === undefined) {
         throw this.parserError('malformed number');
@@ -781,7 +789,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     exponent = -1;
     // calculate decimal part
     for (let i = decimalIndex + 1; i < exponentIndex; i++) {
-      const raw = value[i + startIndex];
+      const raw = value.charCodeAt(i + startIndex);
       const digit = digits[raw];
       if (digit === undefined) {
         throw this.parserError('malformed number');
@@ -796,7 +804,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
 
     if (exponentIndex !== value.length - startIndex) {
       let exponentSign = 1;
-      const firstChar = value[exponentIndex + startIndex + 1];
+      const firstChar = value.charCodeAt(exponentIndex + startIndex + 1);
       if (firstChar === CharCodes.HYPHEN_MINUS) {
         exponentSign = -1;
         exponentIndex++;
@@ -809,7 +817,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
       // exponents can only be integers in base 10
       const exponentDigits = this.generateDigits(10);
       for (let i = value.length - 1; i > exponentIndex + startIndex; i--) {
-        const raw = value[i];
+        const raw = value.charCodeAt(i);
         const digit = exponentDigits[raw];
         if (digit === undefined) {
           throw this.parserError('malformed number');
@@ -843,13 +851,13 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
 
     let value: number | undefined;
 
-    switch (raw.bytes[1]) {
+    switch (raw.charCodeAt(1)) {
       case CharCodes.LATIN_CAPITAL_X:
       case CharCodes.LATIN_SMALL_X:
-        value = this.calculateNumber(raw.bytes, 16);
+        value = this.calculateNumber(raw, 16);
         break;
       default:
-        value = this.calculateNumber(raw.bytes, 10);
+        value = this.calculateNumber(raw, 10);
         break;
     }
 
@@ -861,33 +869,33 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
   }
 
   protected parseStringExpression(): StringExpression {
-    const raw = this.getNext();
-    if (!raw || raw.type !== TokenType.String) {
+    const token = this.getNext();
+    if (!token || token.type !== TokenType.String) {
       throw this.parserError('expected string');
     }
-    const bytes = raw.bytes;
-    const str: number[] = [];
-    switch (bytes[0]) {
+    let str: string;
+    switch (token.charCodeAt(0)) {
       case CharCodes.APOSTROPHE:
-      case CharCodes.QUOTATION_MARK:
-        for (let i = 1; i < bytes.length - 1; i++) {
-          const byte = bytes[i];
+      case CharCodes.QUOTATION_MARK: {
+        const rawStr: number[] = [];
+        for (let i = 1; i < token.length - 1; i++) {
+          const byte = token.charCodeAt(i);
           if (byte === CharCodes.BACKSLASH) {
-            const escape = bytes[i + 1];
+            const escape = token.charCodeAt(i + 1);
             if (escape !== undefined && (escape === CharCodes.LATIN_CAPITAL_X || escape === CharCodes.LATIN_SMALL_X)) {
               // hex
-              const hex0 = bytes[i + 2];
-              const hex1 = bytes[i + 3];
+              const hex0 = token.charCodeAt(i + 2);
+              const hex1 = token.charCodeAt(i + 3);
               if (!Tokenizer.isValidHexChar(hex0) || !Tokenizer.isValidHexChar(hex1)) {
                 throw this.parserError('invalid escape sequence');
               }
 
-              str.push(this.charCodeToNumberValue(hex0) * 16 + this.charCodeToNumberValue(hex1));
+              rawStr.push(this.charCodeToNumberValue(hex0) * 16 + this.charCodeToNumberValue(hex1));
               i += 3;
             } else if (escape !== undefined && escape >= CharCodes.DIGIT_0 && escape <= CharCodes.DIGIT_9) {
-              let decimal0 = bytes[i + 1];
-              let decimal1 = bytes[i + 2] ?? 0;
-              let decimal2 = bytes[i + 3] ?? 0;
+              let decimal0 = token.charCodeAt(i + 1);
+              let decimal1 = token.charCodeAt(i + 2) ?? 0;
+              let decimal2 = token.charCodeAt(i + 3) ?? 0;
               if (decimal0 === undefined) {
                 throw this.parserError('invalid escape sequence');
               }
@@ -902,47 +910,51 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
                   if (escaped > 255) {
                     throw this.parserError('invalid escape sequence');
                   }
-                  str.push(escaped);
+                  rawStr.push(escaped);
                   i += 3;
                 } else {
-                  str.push(decimal0 * 10 + decimal1);
+                  rawStr.push(decimal0 * 10 + decimal1);
                   i += 2;
                 }
               } else {
-                str.push(decimal0);
+                rawStr.push(decimal0);
                 i++;
               }
             } else {
-              const newValue = this.escapeMap[bytes[i + 1]];
+              const newValue = this.escapeMap[token.charCodeAt(i + 1)];
               if (!newValue) {
                 throw this.parserError('invalid escape sequence');
               }
-              str.push(...newValue);
+              rawStr.push(...newValue);
               i++;
             }
           } else {
-            str.push(byte);
+            rawStr.push(byte);
           }
         }
+        str = textDecoder.decode(new Uint8Array(rawStr));
         break;
-      case CharCodes.LEFT_SQUARE_BRACKET:
-        for (let i = 1; i < bytes.length / 2 + 1; i++) {
-          if (bytes[i] === CharCodes.EQUALS_SIGN) {
+      }
+      case CharCodes.LEFT_SQUARE_BRACKET: {
+        const raw: string[] = [];
+        for (let i = 1; i < token.length / 2 + 1; i++) {
+          if (token.charCodeAt(i) === CharCodes.EQUALS_SIGN) {
             continue;
-          } else if (bytes[i] === CharCodes.LEFT_SQUARE_BRACKET) {
-            str.push(...bytes.slice(i + 1, bytes.length - i - 1));
+          } else if (token.charCodeAt(i) === CharCodes.LEFT_SQUARE_BRACKET) {
+            raw.push(...token.slice(i + 1, token.length - i - 1));
             break;
           } else {
             throw this.parserError('invalid long string delimiter');
           }
         }
+        str = raw.join('');
         break;
+      }
       default:
         throw this.parserError('expected string');
     }
 
-    const value = this.textDecoder.decode(new Uint8Array(str));
-    return new StringExpression(raw.value, value);
+    return new StringExpression(token.value, str);
   }
 
   protected parseField(): Field | null {

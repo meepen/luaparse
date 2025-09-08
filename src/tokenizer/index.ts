@@ -1,10 +1,4 @@
-import { TextEncoder } from 'node:util';
 import { CharCodes } from './char-codes.js';
-
-type StringBytes = {
-  readonly value: string;
-  readonly bytes: Uint8Array;
-};
 
 export interface TokenizerState {
   get pos(): number;
@@ -20,47 +14,47 @@ export enum TokenType {
   Comment = 'Comment',
 }
 
-const textEncoder = new TextEncoder();
-const textDecoder = new TextDecoder();
-
-export class Token implements StringBytes {
+export class Token {
   constructor(
-    private readonly input: StringBytes,
+    private readonly mainString: string,
     public readonly start: number,
     public readonly end: number,
     public readonly lineNumber: number,
     public readonly columnNumber: number,
     public readonly type: TokenType,
-  ) {}
-
-  private _bytes?: Uint8Array;
-  private _value?: string;
-
-  get value(): string {
-    if (this._value === undefined) {
-      this._value = textDecoder.decode(this.bytes);
-    }
-    return this._value;
+  ) {
+    this.length = end - start;
   }
 
-  get bytes(): Uint8Array {
-    if (this._bytes === undefined) {
-      this._bytes = this.input.bytes.subarray(this.start, this.end);
+  public readonly length: number;
+
+  public get value() {
+    return this.mainString.slice(this.start, this.end);
+  }
+
+  public is(value: string) {
+    return value.length === this.end - this.start && this.mainString.startsWith(value, this.start);
+  }
+
+  public charCodeAt(index: number) {
+    return this.mainString.charCodeAt(this.start + index);
+  }
+
+  public slice(start = 0, end = this.length) {
+    if (end < 0) {
+      end = this.length + end;
     }
-    return this._bytes;
+
+    return this.mainString.slice(this.start + start, this.start + end);
   }
 }
 
 export class Tokenizer implements TokenizerState {
   constructor(
-    value: string,
-    public tabSize = 2,
+    public readonly input: string,
+    public readonly tabSize = 2,
     public skipComments = true,
   ) {
-    this.input = {
-      value,
-      bytes: this.textEncoder.encode(value),
-    };
     this.computeNextToken();
   }
 
@@ -69,8 +63,8 @@ export class Tokenizer implements TokenizerState {
   protected skipWhile(condition: (char: number) => boolean) {
     const start = this.pos;
     let end = this.pos;
-    while (end < this.input.bytes.length) {
-      if (!condition(this.input.bytes[end])) {
+    while (end < this.input.length) {
+      if (!condition(this.input.charCodeAt(end))) {
         break;
       }
       end++;
@@ -95,7 +89,7 @@ export class Tokenizer implements TokenizerState {
       this.skipWhile(Tokenizer.isWhitespace);
 
       // Check EOF
-      if (this.pos >= this.input.bytes.length) {
+      if (this.pos >= this.input.length) {
         return;
       }
 
@@ -179,11 +173,6 @@ export class Tokenizer implements TokenizerState {
     this.lookahead = new Token(this.input, start.pos, this.pos, start.lineNumber, start.columnNumber, tokenType);
   }
 
-  protected readonly textEncoder = textEncoder;
-  protected readonly textDecoder = textDecoder;
-
-  public readonly input: StringBytes;
-
   // Points at the next byte to be read
   public pos = 0;
   public lineNumber = 1;
@@ -245,7 +234,7 @@ export class Tokenizer implements TokenizerState {
     for (let i = 0; i < count; i++) {
       const columnIncrease = this.peekChar() === CharCodes.TAB ? this.tabSize : 1;
       this.columnNumber += columnIncrease;
-      const chr = this.input.bytes[this.pos++];
+      const chr = this.input.charCodeAt(this.pos++);
       if (Tokenizer.isNewLine(chr)) {
         // CRLF check
         if (chr === CharCodes.CARRIAGE_RETURN && this.peekChar() === CharCodes.LINE_FEED) {
@@ -257,15 +246,15 @@ export class Tokenizer implements TokenizerState {
       }
     }
 
-    return this.input.bytes[pos];
+    return this.input.charCodeAt(pos);
   }
 
   protected peekChar(ahead = 0) {
-    return this.input.bytes[this.pos + ahead];
+    return this.input.charCodeAt(this.pos + ahead);
   }
 
   protected processSimpleString(quoteChar: number) {
-    while (this.pos < this.input.bytes.length) {
+    while (this.pos < this.input.length) {
       const nextChar = this.nextChar();
       if (nextChar === quoteChar) {
         return;
@@ -295,11 +284,11 @@ export class Tokenizer implements TokenizerState {
     // consume last '['
     this.nextChar();
 
-    while (this.pos < this.input.bytes.length) {
+    while (this.pos < this.input.length) {
       if (this.nextChar() === CharCodes.RIGHT_SQUARE_BRACKET) {
         // Check for matching number of equals signs
         let endEqualsCount = 0;
-        for (endEqualsCount = 0; endEqualsCount < equalsCount && this.pos < this.input.bytes.length; endEqualsCount++) {
+        for (endEqualsCount = 0; endEqualsCount < equalsCount && this.pos < this.input.length; endEqualsCount++) {
           if (this.peekChar() !== CharCodes.EQUALS_SIGN) {
             break;
           }
@@ -383,7 +372,7 @@ export class Tokenizer implements TokenizerState {
    * @returns The consumed token or null if it didn't match.
    */
   public consume(expected: string): Token | null {
-    if (this.lookahead?.value === expected) {
+    if (this.lookahead && this.lookahead.is(expected)) {
       return this.getNext();
     }
     return null;
