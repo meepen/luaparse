@@ -66,6 +66,19 @@ export class Tokenizer implements TokenizerState {
 
   public lookahead: Token | null = null;
 
+  protected skipWhile(condition: (char: number) => boolean) {
+    const start = this.pos;
+    let end = this.pos;
+    while (end < this.input.bytes.length) {
+      if (!condition(this.input.bytes[end])) {
+        break;
+      }
+      end++;
+    }
+
+    this.nextChar(end - start);
+  }
+
   protected computeNextToken() {
     this.lookahead = null;
     let tokenType = TokenType.Simple;
@@ -78,12 +91,7 @@ export class Tokenizer implements TokenizerState {
 
     do {
       tokenType = TokenType.Simple;
-      while (this.pos < this.input.bytes.length) {
-        if (!Tokenizer.isWhitespace(this.peekChar())) {
-          break;
-        }
-        this.nextChar();
-      }
+      this.skipWhile(Tokenizer.isWhitespace);
 
       // Check EOF
       if (this.pos >= this.input.bytes.length) {
@@ -135,9 +143,7 @@ export class Tokenizer implements TokenizerState {
             // check for long string
             if (this.peekChar() !== CharCodes.LEFT_SQUARE_BRACKET || !this.processLongString(1)) {
               // skip until newline for single line comments
-              while (!this.eof && !Tokenizer.isNewLine(this.peekChar())) {
-                this.nextChar();
-              }
+              this.skipWhile((c) => !Tokenizer.isNewLine(c));
             }
           }
           break;
@@ -147,17 +153,13 @@ export class Tokenizer implements TokenizerState {
           // Check for shebang
           if (start.pos === 0 && start.lineNumber === 1 && nextChar === CharCodes.NUMBER_SIGN) {
             // Shebang line, skip to end of line
-            while (!this.eof && !Tokenizer.isNewLine(this.peekChar())) {
-              this.nextChar();
-            }
+            this.skipWhile((c) => !Tokenizer.isNewLine(c));
             tokenType = TokenType.Comment;
           }
           // check if it's part of an identifier or keyword
           else if (Tokenizer.isIdentifierStart(nextChar)) {
             tokenType = TokenType.Identifier;
-            while (Tokenizer.isIdentifierPart(this.peekChar())) {
-              this.nextChar();
-            }
+            this.skipWhile(Tokenizer.isIdentifierPart);
           } else if (nextChar >= CharCodes.DIGIT_0 && nextChar <= CharCodes.DIGIT_9) {
             this.processNumber(nextChar);
             tokenType = TokenType.Number;
@@ -233,20 +235,29 @@ export class Tokenizer implements TokenizerState {
     return this.pos >= this.input.bytes.length && this.lookahead === null;
   }
 
-  protected nextChar() {
-    const columnIncrease = this.peekChar() === CharCodes.TAB ? this.tabSize : 1;
-    this.columnNumber += columnIncrease;
-    const chr = this.input.bytes[this.pos++];
-    if (Tokenizer.isNewLine(chr)) {
-      // CRLF check
-      if (chr === CharCodes.CARRIAGE_RETURN && this.peekChar() === CharCodes.LINE_FEED) {
-        this.pos++;
+  /**
+   * Advance the tokenizer by characters
+   * @param count Number of RAW characters to advance - does not combine CRLF into a single newline
+   * @returns The first character that was advanced over
+   */
+  protected nextChar(count = 1) {
+    const pos = this.pos;
+    for (let i = 0; i < count; i++) {
+      const columnIncrease = this.peekChar() === CharCodes.TAB ? this.tabSize : 1;
+      this.columnNumber += columnIncrease;
+      const chr = this.input.bytes[this.pos++];
+      if (Tokenizer.isNewLine(chr)) {
+        // CRLF check
+        if (chr === CharCodes.CARRIAGE_RETURN && this.peekChar() === CharCodes.LINE_FEED) {
+          this.pos++;
+          i++;
+        }
+        this.lineNumber++;
+        this.columnNumber = 1;
       }
-      this.lineNumber++;
-      this.columnNumber = 1;
     }
 
-    return chr;
+    return this.input.bytes[pos];
   }
 
   protected peekChar(ahead = 0) {
@@ -329,16 +340,12 @@ export class Tokenizer implements TokenizerState {
     }
 
     // Check for valid characters
-    while (validCharChecker(this.peekChar())) {
-      this.nextChar();
-    }
+    this.skipWhile(validCharChecker);
 
     // Check for decimal
     if (this.peekChar() === CharCodes.FULL_STOP) {
       this.nextChar();
-      while (validCharChecker(this.peekChar())) {
-        this.nextChar();
-      }
+      this.skipWhile(validCharChecker);
     }
 
     // Normal numbers can have an exponent
@@ -350,9 +357,7 @@ export class Tokenizer implements TokenizerState {
       if (this.peekChar() === CharCodes.PLUS_SIGN || this.peekChar() === CharCodes.HYPHEN_MINUS) {
         this.nextChar();
       }
-      while (Tokenizer.isValidDecimalChar(this.peekChar())) {
-        this.nextChar();
-      }
+      this.skipWhile(Tokenizer.isValidDecimalChar);
     }
   }
 

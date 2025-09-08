@@ -11,6 +11,11 @@ export default defineConfig(
   eslint.configs.recommended,
   tseslint.configs.recommendedTypeChecked,
   {
+    rules: {
+      curly: ['error', 'all'],
+    },
+  },
+  {
     languageOptions: {
       parserOptions: {
         projectService: true,

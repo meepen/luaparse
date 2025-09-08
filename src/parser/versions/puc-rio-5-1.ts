@@ -179,8 +179,9 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return LuaVersion.PUCRio_v5_1;
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   public async parse(): Promise<Chunk> {
-    const chunk = await this.parseBlock();
+    const chunk = this.parseBlock();
     if (!this.eof) {
       throw this.parserError('unexpected token');
     }
@@ -191,10 +192,10 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return new LuaParserError(message, this);
   }
 
-  protected async parseBlock(): Promise<Chunk> {
+  protected parseBlock(): Chunk {
     const statements: Statement[] = [];
     while (!this.eof) {
-      const statement = await this.parseStatement();
+      const statement = this.parseStatement();
       if (!statement) {
         break;
       }
@@ -208,7 +209,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return new Chunk(statements);
   }
 
-  protected readonly statementLookup = createDictionary<string, () => Promise<Statement> | Statement>([
+  protected readonly statementLookup = createDictionary<string, () => Statement>([
     ['return', () => this.parseReturnStatement()],
     [
       'break',
@@ -226,7 +227,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     ['repeat', () => this.parseRepeatStatement()],
   ] as const);
 
-  protected async parseStatement(): Promise<Statement | null> {
+  protected parseStatement(): Statement | null {
     const token = this.lookahead;
     if (!token) {
       return null;
@@ -238,21 +239,21 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
 
     // Either varlist = explist OR functioncall
 
-    const prefixExpression = await this.parsePrefixExpression();
+    const prefixExpression = this.parsePrefixExpression();
     if (!prefixExpression) {
       return null;
     }
     if (prefixExpression.prefixExpressionType === PrefixExpressionType.Variable) {
       const vars = [prefixExpression];
       while (this.consume(',')) {
-        const prefixExpression = await this.parsePrefixExpression();
+        const prefixExpression = this.parsePrefixExpression();
         if (!prefixExpression || prefixExpression.prefixExpressionType !== PrefixExpressionType.Variable) {
           throw this.parserError('expected variable');
         }
         vars.push(prefixExpression);
       }
       this.expect('=');
-      const assignments = await this.parseExpressionList();
+      const assignments = this.parseExpressionList();
       if (assignments.expressions.length === 0) {
         throw this.parserError('expected expression');
       }
@@ -263,7 +264,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     throw this.parserError('expected statement');
   }
 
-  protected async parseLocalStatement(): Promise<LocalVariablesStatement> {
+  protected parseLocalStatement(): LocalVariablesStatement {
     // this will already be consumed by the caller
     // this.expect('local');
     const nameList = this.parseNameList();
@@ -272,7 +273,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     }
     let expressions: ExpressionList | undefined;
     if (this.consume('=')) {
-      expressions = await this.parseExpressionList();
+      expressions = this.parseExpressionList();
       if (expressions.expressions.length === 0) {
         throw this.parserError('expected expression');
       }
@@ -280,48 +281,48 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return new LocalVariablesStatement(nameList, expressions);
   }
 
-  protected async parseLocalFunctionStatement(): Promise<LocalFunctionStatement> {
+  protected parseLocalFunctionStatement(): LocalFunctionStatement {
     // this will already be consumed by the caller
     // this.expect('local');
     this.expect('function');
     const name = this.parseName();
-    const body = await this.parseFuncBody();
+    const body = this.parseFuncBody();
     return new LocalFunctionStatement(name, body);
   }
 
-  protected async parseRepeatStatement(): Promise<RepeatStatement> {
+  protected parseRepeatStatement(): RepeatStatement {
     this.expect('repeat');
-    const statements = await this.parseBlock();
+    const statements = this.parseBlock();
     this.expect('until');
-    const condition = await this.parseExpression();
+    const condition = this.parseExpression();
     if (!condition) {
       throw this.parserError('expected expression');
     }
     return new RepeatStatement(statements, condition);
   }
 
-  protected async parseIfStatement(): Promise<IfStatement> {
+  protected parseIfStatement(): IfStatement {
     this.expect('if');
-    const exp = await this.parseExpression();
+    const exp = this.parseExpression();
     if (!exp) {
       throw this.parserError('expected expression');
     }
     this.expect('then');
-    const block = await this.parseBlock();
+    const block = this.parseBlock();
     const clauses: ElseIfClause[] = [];
     while (this.consume('elseif')) {
-      const exp = await this.parseExpression();
+      const exp = this.parseExpression();
       if (!exp) {
         throw this.parserError('expected expression');
       }
       this.expect('then');
-      const block = await this.parseBlock();
+      const block = this.parseBlock();
       clauses.push(new ElseIfClause(exp, block));
     }
 
     let elseBlock: Chunk | undefined;
     if (this.consume('else')) {
-      elseBlock = await this.parseBlock();
+      elseBlock = this.parseBlock();
     }
 
     this.expect('end');
@@ -329,7 +330,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return new IfStatement(exp, block, clauses, elseBlock);
   }
 
-  protected async parseForAmbiguousStatement(): Promise<ForStatement | ForInStatement> {
+  protected parseForAmbiguousStatement(): ForStatement | ForInStatement {
     this.expect('for');
     const nameList = this.parseNameList();
     if (!nameList) {
@@ -338,43 +339,43 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
 
     if (nameList.names.length === 1 && this.consume('=')) {
       // for statement
-      const start = await this.parseExpression();
+      const start = this.parseExpression();
       if (!start) {
         throw this.parserError('expected expression');
       }
       this.expect(',');
-      const end = await this.parseExpression();
+      const end = this.parseExpression();
       if (!end) {
         throw this.parserError('expected expression');
       }
       let step: Expression | null = null;
       if (this.consume(',')) {
-        step = await this.parseExpression();
+        step = this.parseExpression();
         if (!step) {
           throw this.parserError('expected expression');
         }
       }
       this.expect('do');
-      const statements = await this.parseBlock();
+      const statements = this.parseBlock();
       this.expect('end');
 
       return new ForStatement(nameList.names[0], statements, start, end, ...(step ? [step] : []));
     } else {
       // for in statement
       this.expect('in');
-      const expressions = await this.parseExpressionList();
+      const expressions = this.parseExpressionList();
       if (expressions.expressions.length === 0) {
         throw this.parserError('expected expression');
       }
       this.expect('do');
-      const statements = await this.parseBlock();
+      const statements = this.parseBlock();
       this.expect('end');
 
       return new ForInStatement(nameList, expressions, statements);
     }
   }
 
-  protected async parseLocalAmbiguousStatement(): Promise<LocalVariablesStatement | LocalFunctionStatement> {
+  protected parseLocalAmbiguousStatement(): LocalVariablesStatement | LocalFunctionStatement {
     this.expect('local');
     const token = this.lookahead;
     if (!token) {
@@ -400,45 +401,45 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return new FuncName(name, indexers, methodName);
   }
 
-  protected async parseFunctionStatement(): Promise<FunctionStatement> {
+  protected parseFunctionStatement(): FunctionStatement {
     this.expect('function');
     const name = this.parseFuncName();
-    const body = await this.parseFuncBody();
+    const body = this.parseFuncBody();
     return new FunctionStatement(name, body);
   }
 
-  protected async parseReturnStatement(): Promise<ReturnStatement> {
+  protected parseReturnStatement(): ReturnStatement {
     this.expect('return');
-    const expressions = await this.parseExpressionList();
+    const expressions = this.parseExpressionList();
     return new ReturnStatement(expressions);
   }
 
-  protected async parseDoStatement(): Promise<DoStatement> {
+  protected parseDoStatement(): DoStatement {
     this.expect('do');
-    const statements = await this.parseBlock();
+    const statements = this.parseBlock();
     this.expect('end');
     return new DoStatement(statements);
   }
 
-  protected async parseWhileStatement(): Promise<WhileStatement> {
+  protected parseWhileStatement(): WhileStatement {
     this.expect('while');
-    const condition = await this.parseExpression();
+    const condition = this.parseExpression();
     if (!condition) {
       throw this.parserError('expected expression');
     }
     this.expect('do');
-    const statements = await this.parseBlock();
+    const statements = this.parseBlock();
     this.expect('end');
     return new WhileStatement(condition, statements);
   }
 
-  protected async parseExpressionList(): Promise<ExpressionList> {
+  protected parseExpressionList(): ExpressionList {
     const expressions: Expression[] = [];
-    const expression = await this.parseExpression();
+    const expression = this.parseExpression();
     if (expression) {
       expressions.push(expression);
       while (this.consume(',')) {
-        const expression = await this.parseExpression();
+        const expression = this.parseExpression();
         if (!expression) {
           throw this.parserError('expected expression');
         }
@@ -448,7 +449,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return new ExpressionList(expressions);
   }
 
-  protected async parseExpression(withBinaryExpressions = true): Promise<Expression | null> {
+  protected parseExpression(withBinaryExpressions = true): Expression | null {
     if (!this.lookahead) {
       return null;
     }
@@ -457,7 +458,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     // unary
     if (PUCRio_v5_1_Parser.unaryOperators[this.lookahead.value]) {
       const unaryOperator = this.getNext()!;
-      const right = await this.parseExpression();
+      const right = this.parseExpression();
       if (!right) {
         throw this.parserError('expected expression');
       }
@@ -483,10 +484,10 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
           expression = new VarargExpression();
           break;
         case '{':
-          expression = await this.parseTableConstructorExpression();
+          expression = this.parseTableConstructorExpression();
           break;
         case 'function':
-          expression = await this.parseFunctionExpression();
+          expression = this.parseFunctionExpression();
           break;
         default:
           break;
@@ -503,7 +504,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
           break;
         case TokenType.Identifier:
           if (this.isIdentifier()) {
-            expression = await this.parsePrefixExpression();
+            expression = this.parsePrefixExpression();
           }
           break;
         default:
@@ -512,7 +513,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     }
 
     if (!expression && this.lookahead?.value === '(') {
-      expression = await this.parsePrefixExpression();
+      expression = this.parsePrefixExpression();
     }
 
     if (!expression) {
@@ -523,7 +524,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     const binaryParts: { operator: string; right: Expression }[] = [];
     while (withBinaryExpressions && this.binaryOperators[this.lookahead?.value]) {
       const binaryOperator = this.getNext()!;
-      const right = await this.parseExpression(false);
+      const right = this.parseExpression(false);
       if (!right) {
         throw this.parserError('expected expression');
       }
@@ -532,63 +533,61 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
 
     // build binary expression tree honoring left/right precedence (associativity)
     // precedence map stores [leftBindingPower, rightBindingPower]
-    if (binaryParts.length > 0) {
-      while (binaryParts.length !== 0) {
-        // Determine which operator to reduce next.
-        // Strategy:
-        // 1. Find highest left binding power.
-        // 2. Among operators with same left binding power, if any are right-associative (left > right), pick the rightmost.
-        //    Otherwise (left <= right meaning left-associative) pick the leftmost.
-        let bestIndex = -1;
-        let bestLeft = -1;
-        let bestIsRightAssoc = false;
-        for (let i = 0; i < binaryParts.length; i++) {
-          const { operator } = binaryParts[i];
-          const [leftPrec, rightPrec] = this.binaryOperatorPrecedence[operator]!;
-          if (leftPrec > bestLeft) {
-            bestLeft = leftPrec;
+    while (binaryParts.length !== 0) {
+      // Determine which operator to reduce next.
+      // Strategy:
+      // 1. Find highest left binding power.
+      // 2. Among operators with same left binding power, if any are right-associative (left > right), pick the rightmost.
+      //    Otherwise (left <= right meaning left-associative) pick the leftmost.
+      let bestIndex = -1;
+      let bestLeft = -1;
+      let bestIsRightAssoc = false;
+      for (let i = 0; i < binaryParts.length; i++) {
+        const { operator } = binaryParts[i];
+        const [leftPrec, rightPrec] = this.binaryOperatorPrecedence[operator]!;
+        if (leftPrec > bestLeft) {
+          bestLeft = leftPrec;
+          bestIndex = i;
+          bestIsRightAssoc = leftPrec > rightPrec;
+          continue;
+        }
+        if (leftPrec === bestLeft) {
+          const isRightAssoc = leftPrec > rightPrec;
+          if (bestIsRightAssoc && isRightAssoc) {
+            // both right associative at same precedence -> pick the one further to the right
             bestIndex = i;
-            bestIsRightAssoc = leftPrec > rightPrec;
-            continue;
-          }
-          if (leftPrec === bestLeft) {
-            const isRightAssoc = leftPrec > rightPrec;
-            if (bestIsRightAssoc && isRightAssoc) {
-              // both right associative at same precedence -> pick the one further to the right
-              bestIndex = i;
-            } else if (!bestIsRightAssoc && !isRightAssoc) {
-              // both left associative -> keep the earlier (do nothing)
-            } else if (!bestIsRightAssoc && isRightAssoc) {
-              // prefer right-assoc over left-assoc at same precedence by moving to rightmost right-assoc
-              bestIndex = i;
-              bestIsRightAssoc = true;
-              throw this.parserError('untested code path');
-            }
+          } else if (!bestIsRightAssoc && !isRightAssoc) {
+            // both left associative -> keep the earlier (do nothing)
+          } else if (!bestIsRightAssoc && isRightAssoc) {
+            // prefer right-assoc over left-assoc at same precedence by moving to rightmost right-assoc
+            bestIndex = i;
+            bestIsRightAssoc = true;
+            throw this.parserError('untested code path');
           }
         }
+      }
 
-        const next = binaryParts[bestIndex];
-        // remove it from the list
-        binaryParts.splice(bestIndex, 1);
-        // determine left side
-        const leftIndex = bestIndex - 1;
-        const left = leftIndex === -1 ? expression : binaryParts[leftIndex].right;
-        const newExpr: BinaryOperationExpression = new BinaryOperationExpression(left, next.operator, next.right);
-        if (leftIndex === -1) {
-          expression = newExpr;
-        } else {
-          binaryParts[leftIndex].right = newExpr;
-        }
+      const next = binaryParts[bestIndex];
+      // remove it from the list
+      binaryParts.splice(bestIndex, 1);
+      // determine left side
+      const leftIndex = bestIndex - 1;
+      const left = leftIndex === -1 ? expression : binaryParts[leftIndex].right;
+      const newExpr: BinaryOperationExpression = new BinaryOperationExpression(left, next.operator, next.right);
+      if (leftIndex === -1) {
+        expression = newExpr;
+      } else {
+        binaryParts[leftIndex].right = newExpr;
       }
     }
 
     return expression;
   }
 
-  protected async parsePrefixExpression(): Promise<PrefixExpression | null> {
+  protected parsePrefixExpression(): PrefixExpression | null {
     let expression: PrefixExpression;
     if (this.consume('(')) {
-      const parentheses = await this.parseExpression();
+      const parentheses = this.parseExpression();
       if (!parentheses) {
         throw this.parserError('expected expression');
       }
@@ -612,7 +611,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     ) {
       switch (lookahead) {
         case '[': {
-          const index = await this.parseExpression();
+          const index = this.parseExpression();
           if (!index) {
             throw this.parserError('expected expression');
           }
@@ -626,17 +625,17 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
           break;
 
         case ':':
-          expression = new MethodFunctionCall(expression, this.parseName(), await this.parseArguments());
+          expression = new MethodFunctionCall(expression, this.parseName(), this.parseArguments());
           break;
 
         case '(':
         case '{':
-          expression = new NormalFunctionCall(expression, await this.parseArguments());
+          expression = new NormalFunctionCall(expression, this.parseArguments());
           break;
 
         default:
           if (this.lookahead?.type === TokenType.String) {
-            expression = new NormalFunctionCall(expression, await this.parseArguments());
+            expression = new NormalFunctionCall(expression, this.parseArguments());
             break;
           }
           throw this.parserError("expected '[', '.', '(' or ':'");
@@ -646,15 +645,15 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return expression;
   }
 
-  protected async parseArguments(): Promise<Arguments> {
+  protected parseArguments(): Arguments {
     if (this.lookahead?.type === TokenType.String) {
       return new StringArguments(this.parseStringExpression());
     }
     if (this.lookahead?.value === '{') {
-      return new TableConstructorArguments(await this.parseTableConstructorExpression());
+      return new TableConstructorArguments(this.parseTableConstructorExpression());
     }
     this.expect('(');
-    const expressions = await this.parseExpressionList();
+    const expressions = this.parseExpressionList();
     this.expect(')');
     return new ExpressionListArguments(expressions);
   }
@@ -713,18 +712,18 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return new ParameterList(new NameList(names), hasVararg);
   }
 
-  protected async parseFuncBody(): Promise<FuncBody> {
+  protected parseFuncBody(): FuncBody {
     this.expect('(');
     const parameters = this.parseParameterList();
     this.expect(')');
-    const body = await this.parseBlock();
+    const body = this.parseBlock();
     this.expect('end');
     return new FuncBody(parameters, body);
   }
 
-  protected async parseFunctionExpression(): Promise<Expression> {
+  protected parseFunctionExpression(): Expression {
     this.expect('function');
-    const body = await this.parseFuncBody();
+    const body = this.parseFuncBody();
     return new FunctionExpression(body);
   }
 
@@ -946,22 +945,22 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return new StringExpression(raw.value, value);
   }
 
-  protected async parseField(): Promise<Field | null> {
+  protected parseField(): Field | null {
     if (this.consume('[')) {
-      const key = await this.parseExpression();
+      const key = this.parseExpression();
       if (!key) {
         throw this.parserError('expected expression');
       }
       this.expect(']');
       this.expect('=');
-      const value = await this.parseExpression();
+      const value = this.parseExpression();
       if (!value) {
         throw this.parserError('expected expression');
       }
       return new FieldExpressionKey(key, value);
     }
 
-    const value = await this.parseExpression();
+    const value = this.parseExpression();
     if (!value) {
       return null;
     }
@@ -972,7 +971,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
       value.variablePrefixExpressionType === VariablePrefixExpressionType.Name &&
       this.consume('=')
     ) {
-      const right = await this.parseExpression();
+      const right = this.parseExpression();
       if (!right) {
         throw this.parserError('expected expression');
       }
@@ -982,7 +981,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     }
   }
 
-  protected async parseTableConstructorExpression(): Promise<TableConstructorExpression> {
+  protected parseTableConstructorExpression(): TableConstructorExpression {
     this.expect('{');
     const fields: Field[] = [];
     while (this.lookahead?.value !== '}') {
@@ -990,7 +989,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
         throw this.parserError("expected '}'");
       }
 
-      const field = await this.parseField();
+      const field = this.parseField();
       if (!field) {
         throw this.parserError("expected '}'");
       }
