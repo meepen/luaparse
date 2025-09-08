@@ -735,7 +735,14 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     return new FunctionExpression(body);
   }
 
+  private static digitMemoStatic = new Map<number, { [key: number]: number }>();
+  protected readonly digitMemo = PUCRio_v5_1_Parser.digitMemoStatic;
+
   protected generateDigits(radix: number): { [key: number]: number } {
+    const result = this.digitMemo.get(radix);
+    if (result) {
+      return result;
+    }
     const digits: { [key: number]: number } = {};
     for (let i = 0; i < Math.min(10, radix); i++) {
       digits[CharCodes.DIGIT_0 + i] = i;
@@ -747,6 +754,7 @@ export class PUCRio_v5_1_Parser extends Tokenizer implements AstParser {
     for (let i = 36; i < radix; i++) {
       throw this.parserError('radix too large');
     }
+    this.digitMemo.set(radix, digits);
     return digits;
   }
 
